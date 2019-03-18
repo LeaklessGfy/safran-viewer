@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import { readExperiment, readAlarms } from '../../services/reader';
+import { callWorker } from '../../services/worker';
 
 export default {
   data: () => ({
@@ -51,30 +51,21 @@ export default {
   methods: {
     onSubmit(e) {
       e.preventDefault();
-      if (this.local) {
-        if (this.experiment) {
-          readExperiment(this.experiment)
-            .subscribe(
-              progress => this.progress = progress,
-              err => this.$notify({
-                type: 'error',
-                title: 'Error',
-                text: err.message
-              })
-            );        
-        }
-        if (this.alarms) {
-          readAlarms(this.alarms)
-            .subscribe(
-              progress => this.progress = progress,
-              err => this.$notify({
-                type: 'error',
-                title: 'Error',
-                text: err.message
-              })
-            );
-        }
+
+      if (!this.local) {
+        return;
       }
+
+      callWorker(this.experiment, this.alarms)
+      .subscribe(
+          progress => this.progress = progress,
+          err => this.$notify({
+            type: 'error',
+            title: 'Error',
+            text: err.message
+          }),
+          () => { }
+      );
     }
   }
 };
