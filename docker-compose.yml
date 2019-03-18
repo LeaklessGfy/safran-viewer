@@ -1,0 +1,13 @@
+version: '3'
+services:
+  couchdb:
+    image: "couchdb:latest" 
+    environment:
+      COUCHDB_USER: adm
+      COUCHDB_PASSWORD: pass
+    ports:
+      - "5984:5984"
+    volumes:
+      - data:/usr/local/var/lib/couchdb
+volumes:
+  data:

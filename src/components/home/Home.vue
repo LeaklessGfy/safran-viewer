@@ -9,7 +9,9 @@
         :href="'#/experiment/' + experiment.doc._id"
         class="d-flex justify-content-between align-items-center"
       >
-        {{ experiment.doc.name }}
+        <div>
+          {{ experiment.doc.name }} <b-badge variant="dark">{{ experiment.doc.is_local ? "LOCAL" : "REMOTE" }}</b-badge>
+        </div>
         <b-button variant="danger" @click="e => onClickDelete(e, experiment.doc)">
           <v-icon name="trash"/>
         </b-button>
@@ -26,21 +28,23 @@
       align="center"
     />
 
-    <b-modal v-model="show" title="Supprimer" header-bg-variant="danger" header-text-variant="light" @ok="onConfirmDelete">
+    <b-modal
+      v-model="show"
+      title="Supprimer"
+      header-bg-variant="danger"
+      header-text-variant="light"
+      @ok="onConfirmDelete"
+      ok-variant="danger"
+      ok-title="Supprimer"
+      size="lg"
+    >
       <p class="my-4">Êtes-vous sur de vouloir supprimer cet experiment ?</p>
-
-      <div slot="modal-footer" class="w-100">
-        <div class="float-right">
-        <b-button class="mr-2" @click="show=false">Cancel</b-button>
-        <b-button variant="danger" @click="onConfirmDelete">Supprimer</b-button>
-        </div>
-      </div>
     </b-modal>
   </b-container>
 </template>
 
 <script>
-import { fetchExperiments, deleteExperiment } from "../../services/db";
+import { fetchExperiments, deleteExperiment } from '../../services/db';
 
 export default {
   data() {
@@ -83,5 +87,5 @@ export default {
       this.show = false;
     }
   }
-}
+};
 </script>
