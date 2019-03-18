@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import { importFile } from '../../services/importFile';
+import { readExperiment, readAlarms } from '../../services/reader';
 
 export default {
   data: () => ({
@@ -51,11 +51,29 @@ export default {
   methods: {
     onSubmit(e) {
       e.preventDefault();
-      if (!this.experiment) {
-        return;
-      }
       if (this.local) {
-        importFile(this.experiment).subscribe(progress => this.progress = progress);
+        if (this.experiment) {
+          readExperiment(this.experiment)
+            .subscribe(
+              progress => this.progress = progress,
+              err => this.$notify({
+                type: 'error',
+                title: 'Error',
+                text: err.message
+              })
+            );        
+        }
+        if (this.alarms) {
+          readAlarms(this.alarms)
+            .subscribe(
+              progress => this.progress = progress,
+              err => this.$notify({
+                type: 'error',
+                title: 'Error',
+                text: err.message
+              })
+            );
+        }
       }
     }
   }

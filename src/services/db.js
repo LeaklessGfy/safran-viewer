@@ -45,7 +45,7 @@ const fetchPending = () => {
 export const getLastSync = db => {
   const key = db === 'local' ? 'localLastSync' : 'remoteLastSync';
   const lastSync = localStorage.getItem(key);
-  return lastSync && lastSync !== '0' ? lastSync : 0;
+  return lastSync ? lastSync : 0;
 };
 
 export const setLastSync = (db, lastSync) => {
@@ -55,7 +55,7 @@ export const setLastSync = (db, lastSync) => {
 
 export const localChanges = async () => {
   return await DBLocal.changes({
-    since: getLastSync('local'),
+    since: parseInt(getLastSync('local'), 10),
     include_docs: true
   });
 };
