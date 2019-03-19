@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { BehaviorSubject } from 'rxjs';
+import { Subject, BehaviorSubject } from 'rxjs';
 
 const LOCAL_DB_NAME = 'safran';
 const REMOTE_DB_NAME = 'http://localhost:5984/safran';
@@ -15,8 +15,11 @@ class Database {
   _dbLocal;
   _dbRemote;
   _db;
+  _errorsSubject;
   _experimentSubject;
   _experimentsSubject;
+  _benchsSubject;
+  _campaignsSubject;
   _dbSubject;
   _pendings;
 
@@ -24,18 +27,19 @@ class Database {
     this._dbLocal = new PouchDB(LOCAL_DB_NAME);
     this._dbRemote = new PouchDB(REMOTE_DB_NAME);
     this._db = this._getDefaultDb();
+    this._errorsSubject = new Subject();
     this._experimentSubject = new BehaviorSubject({});
     this._experimentsSubject = new BehaviorSubject([]);
+    this._benchsSubject = new BehaviorSubject([]);
+    this._campaignsSubject = new BehaviorSubject([]);
     this._dbSubject = new BehaviorSubject(this.getCurrent());
     this._pendings = {
       experiment: null
     };
   }
 
-  fetchExperiments(opt) {
-    this._db.allDocs({ include_docs: true, ...opt })
-    .then(docs => this._experimentsSubject.next(docs));
-    return this._experimentsSubject;
+  fetchErrors() {
+    return this._errorsSubject;
   }
 
   fetchExperiment(id) {
@@ -44,6 +48,36 @@ class Database {
     .then(doc => this._experimentSubject.next(doc))
     .catch(err => this._experimentSubject.error(err));
     return this._experimentSubject;
+  }
+
+  fetchExperiments(opt) {
+    this._db.query('experiments/findAll', { include_docs: true, limit: 2, ...opt })
+    .then(docs => this._experimentsSubject.next(docs))
+    .catch(err => {
+      this._errorsSubject.next(err);
+      this._experimentsSubject.next([]);
+    });
+    return this._experimentsSubject;
+  }
+
+  fetchBenchs() {
+    this._db.query('benchs/findAll')
+    .then(docs => this._benchsSubject.next(docs))
+    .catch(err => {
+      this._errorsSubject.next(err);
+      this._benchsSubject.next([]);
+    });
+    return this._benchsSubject;
+  }
+
+  fetchCampaigns() {
+    this._db.query('campaigns/findAll')
+    .then(docs => this._campaignsSubject.next(docs))
+    .catch(err => {
+      this._errorsSubject.next(err);
+      this._campaignsSubject.next([]);
+    });
+    return this._campaignsSubject;
   }
 
   fetchPendings() {
@@ -119,6 +153,8 @@ class Database {
 
   _updateSubjects() {
     this.fetchExperiments();
+    this.fetchBenchs();
+    this.fetchCampaigns();
     this.fetchPendings();
     this.fetchCurrentDb();
   }
