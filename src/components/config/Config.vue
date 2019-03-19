@@ -12,17 +12,17 @@
     </b-form>
 
     <div class="mt-2">
-      <b-button variant="danger" @click="removeLocal">Supprimer la bdd Local</b-button>
+      <b-button variant="danger" @click="remove">Supprimer la BDD</b-button>
     </div>
   </b-container>
 </template>
 
 <script>
-import { removeLocal } from '../../services/db';
+import Db from '../../services/db';
 
 export default {
   methods: {
-    removeLocal
+    remove: () => Db.remove()
   }
 };
 </script>

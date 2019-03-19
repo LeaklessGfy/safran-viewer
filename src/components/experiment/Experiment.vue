@@ -18,13 +18,27 @@
 </template>
 
 <script>
-import { fetchExperiment } from '../../services/db';
+import Db from '../../services/db';
 import Chart from './Chart';
 
 export default {
   subscriptions() {
+    const sub = Db.fetchExperiment(this.$route.params.id);
+
+    sub.subscribe(
+      () => {},
+      () => {
+        this.$notify({
+          type: 'error',
+          title: 'Essai non trouvé',
+          text: 'Cet essai n\'existe pas sur cette base. Vous allez être redirigé'
+        });
+        setTimeout(() => window.location = '/', 3000);
+      }
+    );
+
     return {
-      experiment: fetchExperiment(this.$route.params.id)
+      experiment: sub
     }
   },
   components: {

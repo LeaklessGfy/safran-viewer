@@ -1,89 +1,161 @@
 import PouchDB from 'pouchdb';
 import { BehaviorSubject } from 'rxjs';
 
-const REMOTE = 'http://localhost:5984/safran';
-const LOCAL = 'safran';
+const LOCAL_DB_NAME = 'safran';
+const REMOTE_DB_NAME = 'http://localhost:5984/safran';
 
-const DBLocal = new PouchDB(LOCAL);
-const DBRemote = new PouchDB(REMOTE);
+const LOCAL = 'local';
+const REMOTE = 'remote';
 
-const Experiments = new BehaviorSubject([]);
-const Experiment = new BehaviorSubject({});
+const LOCAL_SYNC_KEY = 'safran:local:last_sync';
+const REMOTE_SYNC_KEY = 'safran:remote:last_sync';
+const DEFAULT_DB_KEY = 'safran:default:db';
 
-let PENDING = [];
+class Database {
+  _dbLocal;
+  _dbRemote;
+  _db;
+  _experimentSubject;
+  _experimentsSubject;
+  _dbSubject;
+  _pendings;
 
-export const fetchExperiments = options => {
-  DBLocal.allDocs({ include_docs: true, ...options })
-    .then(docs => {
-      Experiments.next(docs);
-    });
-
-  return Experiments;
-};
-
-export const fetchExperiment = id => {
-  DBLocal.get(id)
-    .then(doc => Experiment.next(doc))
-    .catch(() => {
-      PENDING.push(fetchExperiment.bind(this, id));
-    });
-
-  return Experiment;
-};
-
-export const deleteExperiment = async doc => {
-  await DBLocal.remove(doc);
-};
-
-const fetchPending = () => {
-  for (let pending of PENDING) {
-    pending();
+  constructor() {
+    this._dbLocal = new PouchDB(LOCAL_DB_NAME);
+    this._dbRemote = new PouchDB(REMOTE_DB_NAME);
+    this._db = this._getDefaultDb();
+    this._experimentSubject = new BehaviorSubject({});
+    this._experimentsSubject = new BehaviorSubject([]);
+    this._dbSubject = new BehaviorSubject(this.getCurrent());
+    this._pendings = {
+      experiment: null
+    };
   }
-  PENDING = [];
-};
 
-export const getLastSync = db => {
-  const key = db === 'local' ? 'localLastSync' : 'remoteLastSync';
-  const lastSync = localStorage.getItem(key);
-  return lastSync ? lastSync : 0;
-};
+  fetchExperiments(opt) {
+    this._db.allDocs({ include_docs: true, ...opt })
+    .then(docs => this._experimentsSubject.next(docs));
+    return this._experimentsSubject;
+  }
 
-export const setLastSync = (db, lastSync) => {
-  const key = db === 'local' ? 'localLastSync' : 'remoteLastSync';
-  localStorage.setItem(key, lastSync);
-};
+  fetchExperiment(id) {
+    this._pendings.experiment = this.fetchExperiment.bind(this, id);
+    this._db.get(id)
+    .then(doc => this._experimentSubject.next(doc))
+    .catch(err => this._experimentSubject.error(err));
+    return this._experimentSubject;
+  }
 
-export const localChanges = async () => {
-  return await DBLocal.changes({
-    since: parseInt(getLastSync('local'), 10),
-    include_docs: true
-  });
-};
+  fetchPendings() {
+    for (let pending of Object.values(this._pendings)) {
+      if (pending) {
+        pending();
+      }
+    }
+  }
 
-export const remoteChanges = async () => {
-  return await DBRemote.changes({
-    since: getLastSync('remote'),
-    include_docs: true
-  });
-};
+  fetchCurrentDb() {
+    this._dbSubject.next(this.getCurrent());
+    return this._dbSubject;
+  }
 
-export const sync = (localLastSync, remoteLastSync) => {
-  setLastSync('local', localLastSync);
-  setLastSync('remote', remoteLastSync);
+  async deleteExperiment(doc) {
+    await this._db.remove(doc);
+  }
 
-  DBLocal.sync(DBRemote)
-    .then(() => {
-      fetchExperiments();
-      fetchPending();
+  async changes() {
+    const local = await this._dbLocal.changes({
+      since: parseInt(this._getLastSync(LOCAL), 10),
+      include_docs: true
     });
-};
 
-export const removeLocal = () => {
-  setLastSync('local', 0);
-  setLastSync('remote', 0);
-  DBLocal.destroy();
-  window.location = '/';
-};
+    const remote = await this._dbRemote.changes({
+      since: this._getLastSync(REMOTE),
+      include_docs: true
+    });
+
+    return {
+      local,
+      remote,
+      length: local.results.length + remote.results.length
+    };
+  }
+
+  async sync(changes) {
+    if (changes.length < 1) {
+      return;
+    }
+    this._setLastSync(LOCAL, changes.local.last_seq);
+    this._setLastSync(REMOTE, changes.remote.last_seq);
+    await this._db.sync(this._getSyncDB());
+    this._updateSubjects();
+  }
+
+  async remove() {
+    this._setLastSync(LOCAL, 0);
+    this._setLastSync(REMOTE, 0);
+    await this._db.destroy();
+    window.location = '/';
+  }
+
+  getCurrent() {
+    return this._db === this._dbLocal ? LOCAL : REMOTE;
+  }
+
+  changeDb() {
+    this._db = this._getSyncDB();
+    this._setDefaultDb(this.getCurrent());
+    this._updateSubjects();
+  }
+
+  _getDefaultDb() {
+    const def = localStorage.getItem(DEFAULT_DB_KEY);
+    return def === REMOTE ? this._dbRemote : this._dbLocal;
+  }
+
+  _setDefaultDb(def) {
+    localStorage.setItem(DEFAULT_DB_KEY, def);
+  }
+
+  _updateSubjects() {
+    this.fetchExperiments();
+    this.fetchPendings();
+    this.fetchCurrentDb();
+  }
+
+  _getLastSync(dbName) {
+    const lastL = localStorage.getItem(LOCAL_SYNC_KEY);
+    const lastR = localStorage.getItem(REMOTE_SYNC_KEY);
+
+    switch (dbName) {
+      case LOCAL:
+        return lastL ? lastL : 0;
+      case REMOTE:
+        return lastR ? lastR : 0;
+      default:
+        throw new Error('Unknown database name ' + dbName);
+    }
+  }
+
+  _setLastSync(dbName, lastSync) {
+    switch (dbName) {
+      case LOCAL:
+        return localStorage.setItem(LOCAL_SYNC_KEY, lastSync);
+      case REMOTE:
+        return localStorage.setItem(REMOTE_SYNC_KEY, lastSync);
+      default:
+        throw new Error('Unknown database name ' + dbName);
+    }
+  }
+
+  _getSyncDB() {
+    return this._db === this._dbLocal ? this._dbRemote : this._dbLocal;
+  }
+}
+
+const Db = new Database();
+
+export default Db;
 
 /*
 DBLocal.sync(DBRemote, {

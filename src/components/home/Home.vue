@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { fetchExperiments, deleteExperiment } from '../../services/db';
+import Db from '../../services/db';
 
 export default {
   data() {
@@ -57,7 +57,7 @@ export default {
     }
   },
   subscriptions() {
-    const sub = fetchExperiments({ limit: this.limit });
+    const sub = Db.fetchExperiments({ limit: this.limit });
 
     sub.subscribe(r => {
       if (!r.rows) return;
@@ -70,7 +70,7 @@ export default {
   },
   methods: {
     onPageChange(page) {
-      fetchExperiments({ limit: this.limit, skip: this.limit * (page - 1) });
+      Db.fetchExperiments({ limit: this.limit, skip: this.limit * (page - 1) });
     },
     onClickDelete(e, doc) {
       e.preventDefault();
@@ -81,9 +81,9 @@ export default {
     },
     async onConfirmDelete() {
       if (this.doc) {
-        await deleteExperiment(this.doc);
+        await Db.deleteExperiment(this.doc);
       }
-      fetchExperiments({ limit: this.limit, skip: this.limit * (this.currentPage - 1) })
+      Db.fetchExperiments({ limit: this.limit, skip: this.limit * (this.currentPage - 1) })
       this.show = false;
     }
   }
