@@ -14,7 +14,7 @@
       </b-card-text>
     </b-card>
 
-    <chart/>
+    <chart class="mt-2"/>
   </b-container>
 </template>
 

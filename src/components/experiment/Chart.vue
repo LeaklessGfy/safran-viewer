@@ -1,5 +1,10 @@
 <template>
-  <div ref="chartdiv"/>
+  <div>
+    <div>
+      <cleave v-model="startTime" :options="timeOpts" class="form-control" placeholder="hh:mm:ss,msss"/>
+    </div>
+    <div id="chart" ref="chartdiv"/>
+  </div>
 </template>
 
 <script>
@@ -10,6 +15,18 @@ import am4themes_animated from '@amcharts/amcharts4/themes/animated';
 am4core.useTheme(am4themes_animated);
 
 export default {
+  data() {
+    return {
+      startTime: null,
+      timeOpts: {
+        blocks: [2, 2, 2, 4],
+        delimiters: [':', ':', ','],
+        numericOnly: true,
+        numeralPositiveOnly: true,
+        stripLeadingZeroes: false
+      }
+    }
+  },
   mounted() {
     const chart = am4core.create(this.$refs.chartdiv, am4charts.XYChart);
 
@@ -53,7 +70,7 @@ export default {
 </script>
 
 <style scoped>
-div {
+#chart {
   width: 100%;
   height: 500px;
 }
