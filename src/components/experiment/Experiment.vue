@@ -4,6 +4,7 @@
     
     <b-card header="Info" :title="experiment.name">
       <b-card-text>
+        id : {{ experiment._id }}<br/>
         name : {{ experiment.name }}<br/>
         reference : {{ experiment.reference }}<br/>
         begin : {{ experiment.begin_time }}<br/>

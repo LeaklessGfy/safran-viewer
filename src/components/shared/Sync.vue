@@ -26,7 +26,7 @@
             >
               <div v-if="!change.deleted">
                 <v-icon name="plus" class="text-success"/>
-                {{ change.doc.type + " - " + (change.doc.name ? change.doc.name : 'design') }}
+                {{ change.doc._id + " - " + (change.doc.name ? change.doc.name : 'design') }}
               </div>
 
               <div v-else>

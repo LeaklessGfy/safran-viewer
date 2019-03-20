@@ -3,8 +3,8 @@ import VueRouter from 'vue-router';
 import BootstrapVue from 'bootstrap-vue';
 import VueRx from 'vue-rx';
 import Notifications from 'vue-notification';
-import Db from './services/db';
 import Icon from 'vue-awesome/components/Icon';
+import Db from './plugins/db';
 import router from './router';
 import App from './App.vue';
 

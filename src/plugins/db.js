@@ -9,6 +9,7 @@ const REMOTE = 'remote';
 
 const LOCAL_SYNC_KEY = 'safran:local:last_sync';
 const REMOTE_SYNC_KEY = 'safran:remote:last_sync';
+const REMOTE_DB_NAME_KEY = 'safran:remote:db_name';
 const DEFAULT_DB_KEY = 'safran:default:db';
 
 const LIMIT = 2;
@@ -24,12 +25,12 @@ class Database {
   _benchsSubject;
   _campaignsSubject;
   _dbSubject;
+  _remoteNameSubject;
   _pendings;
 
   constructor(router) {
     this._router = router;
-    this._dbLocal = new PouchDB(LOCAL_DB_NAME);
-    this._dbRemote = new PouchDB(REMOTE_DB_NAME);
+    this._openDatabases();
     this._db = this._getDefaultDb();
     this._errorsSubject = new Subject();
     this._experimentSubject = new BehaviorSubject({});
@@ -37,6 +38,7 @@ class Database {
     this._benchsSubject = new BehaviorSubject([]);
     this._campaignsSubject = new BehaviorSubject([]);
     this._dbSubject = new BehaviorSubject(this.getCurrent());
+    this._remoteNameSubject = new BehaviorSubject(this.getRemoteDbName());
     this._pendings = {
       experiment: null
     };
@@ -104,26 +106,39 @@ class Database {
     return this._dbSubject;
   }
 
+  fetchRemoteDbName() {
+    this._remoteNameSubject.next(this.getRemoteDbName());
+    return this._remoteNameSubject;
+  }
+
   async deleteExperiment(doc) {
     await this._db.remove(doc);
   }
 
   async changes() {
-    const local = await this._dbLocal.changes({
-      since: parseInt(this._getLastSync(LOCAL), 10),
-      include_docs: true
-    });
+    try {
+      const local = await this._dbLocal.changes({
+        since: parseInt(this._getLastSync(LOCAL), 10),
+        include_docs: true
+      });
+      const remote = await this._dbRemote.changes({
+        since: this._getLastSync(REMOTE),
+        include_docs: true
+      });
 
-    const remote = await this._dbRemote.changes({
-      since: this._getLastSync(REMOTE),
-      include_docs: true
-    });
-
-    return {
-      local,
-      remote,
-      length: local.results.length + remote.results.length
-    };
+      return {
+        local,
+        remote,
+        length: local.results.length + remote.results.length
+      };
+    } catch (err) {
+      this._errorsSubject.next(err);
+      return {
+        local: [],
+        remote: [],
+        length: 0
+      }
+    }
   }
 
   async sync(changes) {
@@ -139,8 +154,10 @@ class Database {
   async remove() {
     this._setLastSync(LOCAL, 0);
     this._setLastSync(REMOTE, 0);
+    const db = this.getCurrent();
     await this._db.destroy();
-    window.location = '/';
+    this._openDatabases();
+    return db;
   }
 
   getCurrent() {
@@ -149,6 +166,17 @@ class Database {
 
   getLimit() {
     return LIMIT;
+  }
+
+  getRemoteDbName() {
+    const dbName = localStorage.getItem(REMOTE_DB_NAME_KEY);
+    return dbName ? dbName : REMOTE_DB_NAME;
+  }
+
+  setRemoteDbName(dbName) {
+    localStorage.setItem(REMOTE_DB_NAME_KEY, dbName ? dbName : REMOTE_DB_NAME);
+    this.fetchRemoteDbName();
+    this._openDatabases();
   }
 
   changeDb() {
@@ -217,6 +245,12 @@ class Database {
 
   _getSyncDB() {
     return this._db === this._dbLocal ? this._dbRemote : this._dbLocal;
+  }
+  
+  _openDatabases() {
+    this._dbLocal = new PouchDB(LOCAL_DB_NAME);
+    this._dbRemote = new PouchDB(this.getRemoteDbName());
+    this._db = this._getDefaultDb();
   }
 }
 
