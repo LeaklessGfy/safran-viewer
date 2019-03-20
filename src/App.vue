@@ -8,11 +8,11 @@
 
 <script>
 import Navbar from './components/shared/Navbar';
-import Db from './services/db';
 
 export default {
   mounted() {
-    Db.fetchErrors().subscribe(err => {
+    this.$db.fetchErrors()
+    .subscribe(err => {
       this.$notify({
         type: 'error',
         title: 'Erreur',

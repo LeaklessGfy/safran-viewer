@@ -11,7 +11,10 @@ const LOCAL_SYNC_KEY = 'safran:local:last_sync';
 const REMOTE_SYNC_KEY = 'safran:remote:last_sync';
 const DEFAULT_DB_KEY = 'safran:default:db';
 
+const LIMIT = 2;
+
 class Database {
+  _router;
   _dbLocal;
   _dbRemote;
   _db;
@@ -23,7 +26,8 @@ class Database {
   _dbSubject;
   _pendings;
 
-  constructor() {
+  constructor(router) {
+    this._router = router;
     this._dbLocal = new PouchDB(LOCAL_DB_NAME);
     this._dbRemote = new PouchDB(REMOTE_DB_NAME);
     this._db = this._getDefaultDb();
@@ -43,15 +47,22 @@ class Database {
   }
 
   fetchExperiment(id) {
-    this._pendings.experiment = this.fetchExperiment.bind(this, id);
+    this._setPending('experiment', this.fetchExperiment.bind(this, id));
     this._db.get(id)
     .then(doc => this._experimentSubject.next(doc))
-    .catch(err => this._experimentSubject.error(err));
+    .catch(err => {
+      this._errorsSubject.next(err);
+      this._experimentSubject.next({});
+    });
     return this._experimentSubject;
   }
 
-  fetchExperiments(opt) {
-    this._db.query('experiments/findAll', { include_docs: true, limit: 2, ...opt })
+  fetchExperiments(page = 1) {
+    this._db.query('experiments/findAll', {
+      include_docs: true,
+      limit: LIMIT,
+      skip: LIMIT * (page - 1)
+    })
     .then(docs => this._experimentsSubject.next(docs))
     .catch(err => {
       this._errorsSubject.next(err);
@@ -136,6 +147,10 @@ class Database {
     return this._db === this._dbLocal ? LOCAL : REMOTE;
   }
 
+  getLimit() {
+    return LIMIT;
+  }
+
   changeDb() {
     this._db = this._getSyncDB();
     this._setDefaultDb(this.getCurrent());
@@ -152,11 +167,27 @@ class Database {
   }
 
   _updateSubjects() {
-    this.fetchExperiments();
-    this.fetchBenchs();
-    this.fetchCampaigns();
-    this.fetchPendings();
     this.fetchCurrentDb();
+    switch (this._router.currentRoute.name) {
+      case 'home':
+        this.fetchExperiments();
+        break;
+      case 'experiment':
+        this.fetchPendings();
+        break;
+      case 'protocol':
+        break;
+      case 'import':
+        this.fetchBenchs();
+        this.fetchCampaigns();
+        break;
+      case 'config':
+        break;
+    }
+  }
+
+  _setPending(subject, callback) {
+    this._pendings[subject] = callback;
   }
 
   _getLastSync(dbName) {
@@ -189,9 +220,26 @@ class Database {
   }
 }
 
-const Db = new Database();
+let _Vue;
 
-export default Db;
+export default Vue => {
+  if (_Vue === Vue) return;
+  _Vue = Vue;
+
+  Vue.mixin({
+    beforeCreate () {
+      if (this.$options.router) {
+        this._db = new Database(this.$options.router);
+      } else if (this.$options.parent && this.$options.parent._db) {
+        this._db = this.$options.parent._db;
+      }
+    }
+  });
+
+  Object.defineProperty(Vue.prototype, '$db', {
+    get () { return this._db; }
+  });
+};
 
 /*
 DBLocal.sync(DBRemote, {

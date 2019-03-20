@@ -74,8 +74,6 @@
 </template>
 
 <script>
-import Db from '../../services/db';
-
 export default {
   data: () => ({
     changes: {
@@ -86,10 +84,10 @@ export default {
   }),
   methods: {
     sync() {
-      Db.sync(this.changes);
+      this.$db.sync(this.changes);
     },
     async fetchChanges() {
-      this.changes = await Db.changes();
+      this.changes = await this.$db.changes();
     }
   }
 };

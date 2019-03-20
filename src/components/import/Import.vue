@@ -109,7 +109,6 @@
 
 <script>
 import { map } from 'rxjs/operators';
-import Db from '../../services/db';
 import { callWorker } from '../../services/worker';
 
 export default {
@@ -128,13 +127,13 @@ export default {
   }),
   subscriptions() {
     return {
-      benchs: Db.fetchBenchs().pipe(
+      benchs: this.$db.fetchBenchs().pipe(
         map(benchs => {
           if (!benchs.rows) return benchs;
           return benchs.rows.map(r => r.value.name);
         })
       ),
-      campaigns: Db.fetchCampaigns().pipe(
+      campaigns: this.$db.fetchCampaigns().pipe(
         map(campaigns => {
           if (!campaigns.rows) return campaigns;
           return campaigns.rows.map(r => r.value.id12c);

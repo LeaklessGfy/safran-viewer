@@ -6,11 +6,11 @@ import Import from './components/import/Import';
 import Config from './components/config/Config';
 
 const routes = [
-  { path: '/', component: Home },
-  { path: '/experiment/:id', component: Experiment },
-  { path: '/protocol', component: Protocol },
-  { path: '/import', component: Import },
-  { path: '/config', component: Config }
+  { path: '/', name: 'home', component: Home },
+  { path: '/experiment/:id', name: 'experiment', component: Experiment },
+  { path: '/protocol', name: 'protocol', component: Protocol },
+  { path: '/import', name: 'import', component: Import },
+  { path: '/config', name: 'config', component: Config }
 ];
 
 const router = new VueRouter({ routes });

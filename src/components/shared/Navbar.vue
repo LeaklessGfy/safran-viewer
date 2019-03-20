@@ -23,16 +23,17 @@
 
 <script>
 import Sync from './Sync';
-import Db from '../../services/db';
 
 export default {
   subscriptions() {
     return {
-      db: Db.fetchCurrentDb()
+      db: this.$db.fetchCurrentDb()
     }
   },
   methods: {
-    changeDb: () => Db.changeDb()
+    changeDb() {
+      this.$db.changeDb();
+    }
   },
   components: {
     sync: Sync

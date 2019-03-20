@@ -20,7 +20,7 @@
 
     <b-pagination
       v-model="currentPage"
-      :total-rows="totalPage"
+      :total-rows="experiments.total_rows"
       :per-page="limit"
       @change="onPageChange"
       size="md"
@@ -44,33 +44,23 @@
 </template>
 
 <script>
-import Db from '../../services/db';
-
 export default {
   data() {
     return {
       currentPage: 1,
-      totalPage: 1,
-      limit: 2,
+      limit: this.$db.getLimit(),
       show: false,
       doc: null
     }
   },
   subscriptions() {
-    const sub = Db.fetchExperiments({ limit: this.limit });
-
-    sub.subscribe(r => {
-      if (!r.rows) return;
-      this.totalPage = r.total_rows;
-    });
-
     return {
-      experiments: sub
+      experiments: this.$db.fetchExperiments()
     }
   },
   methods: {
     onPageChange(page) {
-      Db.fetchExperiments({ limit: this.limit, skip: this.limit * (page - 1) });
+      this.$db.fetchExperiments(page);
     },
     onClickDelete(e, doc) {
       e.preventDefault();
@@ -81,9 +71,9 @@ export default {
     },
     async onConfirmDelete() {
       if (this.doc) {
-        await Db.deleteExperiment(this.doc);
+        await this.$db.deleteExperiment(this.doc);
       }
-      Db.fetchExperiments({ limit: this.limit, skip: this.limit * (this.currentPage - 1) })
+      this.$db.fetchExperiments(this.currentPage);
       this.show = false;
     }
   }
