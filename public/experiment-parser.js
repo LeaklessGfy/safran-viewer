@@ -49,13 +49,13 @@ class ExperimentParser {
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
       FIRST_COLUMN_SAMPLE,
       v => v,
-      v => ({ name: v, experiment: this._experimentId })
+      v => this._parseMeasure(v)
     );
-    await this._parseTypeUnit();
+    await this._parseTypesUnits();
     this._observer.onProgress(info.progress);
   }
 
-  async _parseTypeUnit() {
+  async _parseTypesUnits() {
     const info = await this._readLine(this._experimentReader, 3, 3);
     this._checkLine(info, 3);
     const type = this._collector(
@@ -71,10 +71,7 @@ class ExperimentParser {
       v => v
     );
     for (let i in type) {
-      const measure = this._metadata.measures[i];
-      measure.type = type[i];
-      measure.unit = unit[i];
-      measure.samples = [];
+      this._parseTypeUnit(i, type, unit);
     }
     this._observer.onProgress(info.progress);
   }
@@ -98,6 +95,7 @@ class ExperimentParser {
     for (let i = FIRST_COLUMN_SAMPLE; i < this._metadata.measures.length; i++) {
       if (samples[i] && samples[i].toLowerCase() !== 'nan') {
         const sample = {
+          type: 'sample',
           value: samples[i],
           time: samples[1],
         };
@@ -122,9 +120,25 @@ class ExperimentParser {
     }
   }
 
+  _parseMeasure(value) {
+    return {
+      type: 'measure',
+      name: value,
+      experiment: this._experimentId
+    };
+  }
+
+  _parseTypeUnit(i, type, unit) {
+    const measure = this._metadata.measures[i];
+    measure.type = type[i];
+    measure.unit = unit[i];
+    measure.samples = [];
+  }
+
   _parseAlarm(line) {
     const arr = this._parse(line, 3);
     this._metadata.alarms.push({
+      type: 'alarm',
       reference: null,
       name: null,
       state: null,
