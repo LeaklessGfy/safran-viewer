@@ -1,0 +1,6 @@
+{"new_edits":false,"docs":[
+{"_id":"62581984efcf2cd8fd41ba09800004f8","_rev":"1-01410da60631228317079091e3a96da6","type":"experiment","reference":"experiment1","name":"experiment1","begin_time":"","end_time":"","is_local":false,"bench":{"reference":"bench1","name":"bench1"},"campaign":{"id12c":"campaign1"}},
+{"_id":"_design/benchs","_rev":"5-3fdc2bbfdf4cafbe0d844e8fea4b2482","views":{"findAll":{"map":"function (doc) {\n  if (doc.type === 'experiment') {\n    emit(doc.bench.reference, doc.bench);\n  }\n}","reduce":"function (keys, values, rereduce) {\n  return values[0];\n}"}},"language":"javascript"},
+{"_id":"_design/campaigns","_rev":"14-542e616e74f5f69481934df0c2b33875","views":{"findAll":{"map":"function (doc) {\n  if (doc.type === 'experiment') {\n    emit(doc.campaign.id12c, doc.campaign);\n  }\n}","reduce":"function (keys, values, rereduce) {\n  return values[0];\n}"}},"language":"javascript"},
+{"_id":"_design/experiments","_rev":"2-8e3836f7d26c2a43ed73913e163f8b45","views":{"findAll":{"map":"function (doc) {\n  if (doc.type === 'experiment') {\n    emit(doc._id);\n  }  \n}"}},"language":"javascript"}
+]}
