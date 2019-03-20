@@ -29,26 +29,26 @@
 
       <div class="border p-3 mb-3">
         <b-form-group label="Banc">
-          <b-form-select v-model="benchId" :options="benchs">
+          <b-form-select v-model="bench" :options="benchs">
             <template slot="first">
-              <option :value="null">New...</option>
+              <option :value="newBench">New...</option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="benchId === null">
+        <div v-if="bench === newBench">
           <b-form-group label="Référence du banc">
             <b-form-input
-              v-model="benchReference"
-              :state="Boolean(benchReference)"
+              v-model="bench.reference"
+              :state="Boolean(bench.reference)"
               placeholder="Référence du banc"
               required
             />
           </b-form-group>
           <b-form-group label="Nom du banc">
             <b-form-input
-              v-model="benchName"
-              :state="Boolean(benchName)"
+              v-model="bench.name"
+              :state="Boolean(bench.name)"
               placeholder="Nom du banc"
               required
             />
@@ -58,18 +58,18 @@
 
       <div class="border p-3 mb-3">
         <b-form-group label="Campagne">
-          <b-form-select v-model="campaignId" :options="campaigns">
+          <b-form-select v-model="campaign" :options="campaigns">
             <template slot="first">
-              <option :value="null">New...</option>
+              <option :value="newCampaign">New...</option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="campaignId === null">
+        <div v-if="campaign === newCampaign">
           <b-form-group label="ID12C de la campagne">
             <b-form-input
-              v-model="campaignId12c"
-              :state="Boolean(campaignId12c)"
+              v-model="campaign.id12c"
+              :state="Boolean(campaign.id12c)"
               placeholder="ID12C de la campagne"
               required
             />
@@ -79,17 +79,16 @@
 
       <b-form-group label="Fichier Essai *">
         <b-form-file
-          v-model="experiment"
-          :state="Boolean(experiment)"
+          v-model="experimentFile"
+          :state="Boolean(experimentFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
-          required
         />
       </b-form-group>
 
       <b-form-group label="Fichier Alarms">
         <b-form-file
-          v-model="alarms"
+          v-model="alarmsFile"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
         />
@@ -111,18 +110,20 @@
 import { map } from 'rxjs/operators';
 import { callWorker } from '../../services/worker';
 
+const defaultBench = { reference: '', name: '' };
+const defaultCampaign = { id12c: '' };
+
 export default {
   data: () => ({
     local: true,
     reference: '',
     name: '',
-    benchId: null,
-    benchName: '',
-    benchReference: '',
-    campaignId: null,
-    campaignId12c: '',
-    experiment: null,
-    alarms: null,
+    bench: defaultBench,
+    campaign: defaultCampaign,
+    newBench: defaultBench,
+    newCampaign: defaultCampaign,
+    experimentFile: null,
+    alarmsFile: null,
     progress: 0
   }),
   subscriptions() {
@@ -130,34 +131,44 @@ export default {
       benchs: this.$db.fetchBenchs().pipe(
         map(benchs => {
           if (!benchs.rows) return benchs;
-          return benchs.rows.map(r => r.value.name);
+          return benchs.rows.map(r => ({ text: r.value.name, value: r.value }));
         })
       ),
       campaigns: this.$db.fetchCampaigns().pipe(
         map(campaigns => {
           if (!campaigns.rows) return campaigns;
-          return campaigns.rows.map(r => r.value.id12c);
+          return campaigns.rows.map(r => ({ text: r.value.id12c, value: r.value }));
         }),
       )
     };
   },
   methods: {
-    onSubmit(e) {
+    async onSubmit(e) {
       e.preventDefault();
+      const experiment = new this.$db.Experiment(
+        this.reference,
+        this.name,
+        this.bench,
+        this.campaign,
+        this.$db.getCurrent() === 'local'
+      );
+      const dbInfo = await this.$db.insertExperiment(experiment);
 
       if (!this.local) {
         return;
       }
 
-      callWorker(this.experiment, this.alarms)
-      .subscribe(
-          progress => this.progress = progress,
-          err => this.$notify({
-            type: 'error',
-            title: 'Error',
-            text: err.message
-          }),
-          () => { }
+      callWorker(dbInfo.id, this.experimentFile, this.alarmsFile, metadata => {
+        experiment.updateMetadata(metadata);
+        this.$db.editExperiment(dbInfo.rev, experiment)
+        .then(v => console.log(v));
+      }).subscribe(
+        progress => this.progress = progress,
+        err => this.$notify({
+          type: 'error',
+          title: 'Error',
+          text: err.message
+        })
       );
     },
     onReset() {

@@ -7,8 +7,8 @@
         id : {{ experiment._id }}<br/>
         name : {{ experiment.name }}<br/>
         reference : {{ experiment.reference }}<br/>
-        begin : {{ experiment.begin_time }}<br/>
-        end : {{ experiment.end_time }}<br/>
+        begin : {{ experiment.beginTime }}<br/>
+        end : {{ experiment.endTime }}<br/>
         bench : {{ experiment.bench ? experiment.bench.name : '' }}<br/>
         campaign : {{ experiment.campaign ? experiment.campaign.id12c : '' }}
       </b-card-text>

@@ -2,15 +2,16 @@ self.importScripts('linenavigator.min.js');
 self.importScripts('experiment-parser.js');
 
 addEventListener("message", async function(event) {
-  const experimentReader = new LineNavigator(event.data.experiment, {
+  const experimentId = event.data.experimentId;
+  const experimentReader = new LineNavigator(event.data.experimentFile, {
     chunkSize: Number.MAX_SAFE_INTEGER,
     throwOnLongLines: true
   });
-  const alarmsReader = event.data.alarms ? new LineNavigator(event.data.alarms, {
+  const alarmsReader = event.data.alarmsFile ? new LineNavigator(event.data.alarmsFile, {
     throwOnLongLines: true
   }) : null;
 
-  const parser = new ExperimentParser(0, experimentReader, alarmsReader, {
+  const parser = new ExperimentParser(experimentId, experimentReader, alarmsReader, {
     onProgress: progress => postMessage({ type: 'progress', value: progress })
   });
   const metadata = await parser.parse();

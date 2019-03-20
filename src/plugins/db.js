@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import { Subject, BehaviorSubject } from 'rxjs';
+import Experiment from './models/experiment';
 
 const LOCAL_DB_NAME = 'safran';
 const REMOTE_DB_NAME = 'http://localhost:5984/safran';
@@ -27,6 +28,7 @@ class Database {
   _dbSubject;
   _remoteNameSubject;
   _pendings;
+  Experiment = Experiment;
 
   constructor(router) {
     this._router = router;
@@ -74,7 +76,7 @@ class Database {
   }
 
   fetchBenchs() {
-    this._db.query('benchs/findAll')
+    this._db.query('benchs/findAll', { group: true })
     .then(docs => this._benchsSubject.next(docs))
     .catch(err => {
       this._errorsSubject.next(err);
@@ -84,7 +86,7 @@ class Database {
   }
 
   fetchCampaigns() {
-    this._db.query('campaigns/findAll')
+    this._db.query('campaigns/findAll', { group: true })
     .then(docs => this._campaignsSubject.next(docs))
     .catch(err => {
       this._errorsSubject.next(err);
@@ -109,6 +111,28 @@ class Database {
   fetchRemoteDbName() {
     this._remoteNameSubject.next(this.getRemoteDbName());
     return this._remoteNameSubject;
+  }
+
+  async insertExperiment(experiment) {
+    try {
+      return await this._db.post(experiment);
+    } catch (err) {
+      this._errorsSubject.next(err);
+      return null;
+    }
+  }
+
+  async editExperiment(_rev, experiment) {
+    try {
+      await this._db.put({
+        _rev,
+        ...experiment
+      });
+      return true;
+    } catch (err) {
+      this._errorsSubject.next(err);
+      return false;
+    }
   }
 
   async deleteExperiment(doc) {
@@ -154,10 +178,19 @@ class Database {
   async remove() {
     this._setLastSync(LOCAL, 0);
     this._setLastSync(REMOTE, 0);
-    const db = this.getCurrent();
     await this._db.destroy();
     this._openDatabases();
-    return db;
+    return this.getCurrent();
+  }
+
+  async compact() {
+    try {
+      await this._db.compact();
+      await this._db.viewCleanup();
+      return this.getCurrent();
+    } catch (err) {
+      this._errorsSubject.next(err);
+    }
   }
 
   getCurrent() {
@@ -248,8 +281,13 @@ class Database {
   }
   
   _openDatabases() {
-    this._dbLocal = new PouchDB(LOCAL_DB_NAME);
-    this._dbRemote = new PouchDB(this.getRemoteDbName());
+    this._dbLocal = new PouchDB(LOCAL_DB_NAME, {
+      auto_compaction: true
+    });
+    this._dbRemote = new PouchDB(this.getRemoteDbName(), {
+      auth: { username: 'adm', password: 'pass' },
+      auto_compaction: true
+    });
     this._db = this._getDefaultDb();
   }
 }

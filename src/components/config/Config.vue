@@ -11,6 +11,7 @@
 
     <div class="border mt-2 p-2">
       <p>Base de donnée courante : {{ db }}</p>
+      <b-button variant="warning" @click="compact" class="mr-2">Compacter la BDD {{ db }}</b-button>
       <b-button variant="danger" @click="remove">Supprimer la BDD {{ db }}</b-button>
     </div>
   </b-container>
@@ -36,9 +37,20 @@ export default {
       this.$db.remove()
       .then(db => {
         this.$notify({
+          type: 'success',
           title: 'Succès',
-          text: `La base de donnée ${db} à bien été supprimé`
+          text: `La base de donnée ${db} à bien été supprimée`
         });
+      });
+    },
+    compact() {
+      this.$db.compact()
+      .then(db => {
+        this.$notify({
+          type: 'success',
+          title: 'Succès',
+          text: `La base de donées ${db} à bien été compactée`
+        })
       });
     }
   }

@@ -10,7 +10,9 @@
         class="d-flex justify-content-between align-items-center"
       >
         <div>
-          {{ experiment.doc.name }} <b-badge variant="dark">{{ experiment.doc.is_local ? "LOCAL" : "REMOTE" }}</b-badge>
+          {{ experiment.doc.name }} <b-badge :variant="experiment.doc.isLocal ? 'light' : 'dark'">
+            {{ experiment.doc.isLocal ? "LOCAL" : "REMOTE" }}
+          </b-badge>
         </div>
         <b-button variant="danger" @click="e => onClickDelete(e, experiment.doc)">
           <v-icon name="trash"/>

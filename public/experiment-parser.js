@@ -13,7 +13,7 @@ class ExperimentParser {
     this._alarmsReader = alarmsReader;
     this._observer = observer;
     this._metadata = {
-      startTime: null,
+      beginTime: null,
       endTime: null,
       measures: [],
       alarms: [],
@@ -37,7 +37,7 @@ class ExperimentParser {
     this._checkLine(info, 2);
     const arr1 = this._parse(info.lines[0], 2);
     const arr2 = this._parse(info.lines[1], 2);
-    this._metadata.startTime = arr1[1];
+    this._metadata.beginTime = arr1[1];
     this._metadata.endTime = arr2[1];
     this._observer.onProgress(info.progress);
   }
@@ -49,7 +49,7 @@ class ExperimentParser {
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
       FIRST_COLUMN_SAMPLE,
       v => v,
-      v => ({ name: v })
+      v => ({ name: v, experiment: this._experimentId })
     );
     await this._parseTypeUnit();
     this._observer.onProgress(info.progress);

@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs';
-import { downloadFile } from './file';
 
-export const callWorker = (experiment, alarms) => {
+export const callWorker = (experimentId, experimentFile, alarmsFile, onComplete) => {
   return new Observable(subscriber => {
     const worker = new Worker('worker.js');
 
@@ -9,8 +8,8 @@ export const callWorker = (experiment, alarms) => {
       if (event.data.type === 'progress') {
         return subscriber.next(event.data.value);
       }
-      downloadFile('dump.json', JSON.stringify(event.data), 'json');
       worker.terminate();
+      onComplete(event.data);
       subscriber.complete();
     }, false);
 
@@ -18,6 +17,6 @@ export const callWorker = (experiment, alarms) => {
       return subscriber.error(err);
     }, false);
 
-    worker.postMessage({ experiment, alarms });
+    worker.postMessage({ experimentId, experimentFile, alarmsFile });
   });
 }
