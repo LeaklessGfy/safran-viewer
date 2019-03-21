@@ -127,7 +127,11 @@ export default {
           this.selectedMeasures[measure.id] = measure;
         } else {
           this.selectedMeasures[measure.id] = former[measure.id];
+          delete former[measure.id];
         }
+      }
+      for (let remove of Object.values(former)) {
+        this.chart.removeMeasure(remove);
       }
     }
   }

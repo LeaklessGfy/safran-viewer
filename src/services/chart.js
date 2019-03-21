@@ -729,7 +729,14 @@ export default class Chart {
   }
 
   removeMeasure(measure) {
-
+    console.log(this._measuresSeries, measure);
+    const series = this._measuresSeries[measure.id];
+    if (!series) {
+      alert('error');
+      return;
+    }
+    const index = this._chart.series.indexOf(series);
+    this._chart.series.removeIndex(index).dispose();
   }
 
   destroy() {
