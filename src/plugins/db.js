@@ -14,7 +14,7 @@ const REMOTE_SYNC_KEY = 'safran:remote:last_sync';
 const REMOTE_DB_NAME_KEY = 'safran:remote:db_name';
 const DEFAULT_DB_KEY = 'safran:default:db';
 
-const LIMIT = 2;
+const LIMIT = 6;
 
 class Database {
   _router;
