@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb';
 import { Subject, BehaviorSubject } from 'rxjs';
 import Experiment from './models/experiment';
-import { BULK_DESIGNS, MAPPER_DESIGNS } from './designs/designs';
+import { BULK_DESIGNS, MAPPER_DESIGNS } from './designs';
 
 const LOCAL_DB_NAME = 'safran';
 const REMOTE_DB_NAME = 'http://localhost:5984/safran';
@@ -97,14 +97,25 @@ class Database {
     return this._campaignsSubject;
   }
 
-  fetchMeasures(id) {
-    this._db.query('measures/findAll', { key: [null, id] })
+  fetchMeasures(id, page = 1) {
+    this._db.query('measures/findAll', {
+      key: id,
+      limit: LIMIT,
+      skip: LIMIT * (page - 1)
+    })
     .then(docs => this._measuresSubject.next(docs))
     .catch(err => {
       this._errorsSubject.next(err);
       this._measuresSubject.next([]);
     });
     return this._measuresSubject;
+  }
+
+  fetchMeasure(id) {
+    return this._db.get(id)
+    .catch(err => {
+      this._errorsSubject.next(err);
+    });
   }
 
   fetchMeasuresTest(id) {

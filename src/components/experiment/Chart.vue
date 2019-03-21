@@ -1,76 +1,141 @@
 <template>
   <div>
-    <div>
-      <cleave v-model="startTime" :options="timeOpts" class="form-control" placeholder="hh:mm:ss,msss"/>
-    </div>
-    <div id="chart" ref="chartdiv"/>
+    <b-row>
+      <b-col>
+        <cleave
+          v-model="startTime"
+          :options="options"
+          class="form-control"
+          placeholder="hh:mm:ss,msss"
+        />
+      </b-col>
+      <b-col>
+        <b-button v-b-modal.measuresModal>
+          <v-icon name="chart-line"/> Mesures
+        </b-button>
+      </b-col>
+      <b-col>
+        <cleave
+          v-model="endTime"
+          :options="options"
+          class="form-control"
+          placeholder="hh:mm:ss,msss"
+        />
+      </b-col>
+    </b-row>
+    
+    <div class="chart" :ref="refName"/>
+
+    <b-modal id="measuresModal" title="Mesures" @show="onMeasuresShow" @ok="onOk" size="lg">
+      <b-list-group>
+        <b-list-group-item
+          v-for="measure in measures.rows"
+          v-bind:key="measure.id"
+          class="d-flex justify-content-between align-items-center"
+        >
+          {{ measure.value.name }} - {{ measure.value.unit }}
+          <b-button
+            v-if="!tmpMeasures.some(m => m.id === measure.id)"
+            @click="() => onClickAdd(measure)"
+            variant="outline-success"
+          >
+            Ajouter
+          </b-button>
+          <b-button
+            v-else
+            @click="() => onClickRemove(measure)"
+            variant="outline-danger"
+          >
+            Retirer
+          </b-button>
+        </b-list-group-item>
+      </b-list-group>
+
+      <b-pagination
+        v-model="currentPage"
+        :total-rows="measures.total_rows"
+        :per-page="limit"
+        @change="onPageChange"
+        size="md"
+        class="mt-3"
+        align="center"
+      />
+    </b-modal>
   </div>
 </template>
 
 <script>
-import * as am4core from '@amcharts/amcharts4/core';
-import * as am4charts from '@amcharts/amcharts4/charts';
-import am4themes_animated from '@amcharts/amcharts4/themes/animated';
-
-am4core.useTheme(am4themes_animated);
+import Chart from '../../services/chart';
 
 export default {
   data() {
     return {
+      chart: null,
       startTime: null,
-      timeOpts: {
+      endTime: null,
+      currentPage: 1,
+      limit: this.$db.getLimit(),
+      options: {
         blocks: [2, 2, 2, 4],
         delimiters: [':', ':', ','],
         numericOnly: true,
         numeralPositiveOnly: true,
         stripLeadingZeroes: false
-      }
+      },
+      tmpMeasures: [],
+      selectedMeasures: {}
+    }
+  },
+  props: {
+    refName: String
+  },
+  subscriptions() {
+    return {
+      measures: this.$db._measuresSubject
     }
   },
   mounted() {
-    const chart = am4core.create(this.$refs.chartdiv, am4charts.XYChart);
-
-    chart.paddingRight = 20;
-
-    let data = [];
-    let visits = 10;
-    for (let i = 1; i < 366; i++) {
-      visits += Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 10);
-      data.push({ date: new Date(2018, 0, i), name: "name" + i, value: visits });
-    }
-
-    chart.data = data;
-
-    let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
-    dateAxis.renderer.grid.template.location = 0;
-
-    let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    valueAxis.tooltip.disabled = true;
-    valueAxis.renderer.minWidth = 35;
-
-    let series = chart.series.push(new am4charts.LineSeries());
-    series.dataFields.dateX = "date";
-    series.dataFields.valueY = "value";
-
-    series.tooltipText = "{valueY.value}";
-    chart.cursor = new am4charts.XYCursor();
-
-    let scrollbarX = new am4charts.XYChartScrollbar();
-    scrollbarX.series.push(series);
-    chart.scrollbarX = scrollbarX;
-
-    this.chart = chart;
+    this.chart = new Chart(this.$refs[this.refName], this.startTime, this.endTime);
   },
   beforeDestroy() {
-    if (this.chart) {
-      this.chart.dispose();
+    this.chart.destroy();
+  },
+  methods: {
+    onMeasuresShow() {
+      if (this.measures.length < 1) {
+        this.$db.fetchMeasures(this.$route.params.id, this.currentPage);
+      }
+    },
+    onPageChange(page) {
+      this.$db.fetchMeasures(this.$route.params.id, page);
+    },
+    onClickAdd(measure) {
+      this.tmpMeasures.push(measure);
+    },
+    onClickRemove(measure) {
+      this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
+    },
+    onOk() {
+      const former = Object.assign({}, this.selectedMeasures);
+      this.selectedMeasures = {};
+      for (let measure of this.tmpMeasures) {
+        if (!former[measure.id]) {
+          this.$db.fetchMeasure(measure.id)
+          .then(measure => {
+            this.chart.addMeasure(measure, measure.samples);
+          });
+          this.selectedMeasures[measure.id] = measure;
+        } else {
+          this.selectedMeasures[measure.id] = former[measure.id];
+        }
+      }
     }
   }
 };
 </script>
 
 <style scoped>
-#chart {
+.chart {
   width: 100%;
   height: 500px;
 }

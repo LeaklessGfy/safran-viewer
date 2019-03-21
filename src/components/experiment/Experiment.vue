@@ -14,7 +14,7 @@
       </b-card-text>
     </b-card>
 
-    <chart class="mt-2"/>
+    <chart class="mt-2" refName="chart1"/>
   </b-container>
 </template>
 
@@ -22,13 +22,9 @@
 import Chart from './Chart';
 
 export default {
-  mounted() {
-    this.$db.fetchMeasuresTest(this.$route.params.id);
-  },
   subscriptions() {
     return {
-      experiment: this.$db.fetchExperiment(this.$route.params.id),
-      //measures: this.$db.fetchMeasures(this.$route.params.id)
+      experiment: this.$db.fetchExperiment(this.$route.params.id)
     }
   },
   components: {

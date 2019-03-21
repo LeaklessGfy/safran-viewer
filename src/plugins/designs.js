@@ -61,7 +61,7 @@ export const MEASURES_DESIGN = {
     findAll: {
       map: function (doc) {
         if (doc.typeX === 'measure') {
-          emit([doc._id, doc.experiment], { name: doc.name, type: doc.type, unit: doc.unit });
+          emit(doc.experiment, { name: doc.name, type: doc.type, unit: doc.unit });
         }
       }.toString()
     }
