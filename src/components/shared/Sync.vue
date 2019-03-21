@@ -15,65 +15,30 @@
       @ok="sync"
     >
       <b-card-group deck>
-        <b-card bg-variant="light" header="Local Changes" class="text-center">
-          <b-list-group>
-            <b-list-group-item
-              v-for="(change, i) in changes.local.results"
-              v-bind:key="i"
-              class="text-left"
-              button
-              v-b-toggle="'local'+i"
-            >
-              <div v-if="!change.deleted">
-                <v-icon name="plus" class="text-success"/>
-                {{ change.doc._id + " - " + (change.doc.name ? change.doc.name : 'design') }}
-              </div>
-
-              <div v-else>
-                <v-icon name="minus" class="text-danger"/>
-                {{ change.doc._id }}
-              </div>
-
-              <b-collapse :id="'local'+i" class="mt-2 border">
-                <pre>{{ JSON.stringify(change, undefined, 2) }}</pre>
-              </b-collapse>
-            </b-list-group-item>
-          </b-list-group>
-        </b-card>
+        <sync-tab
+          bgVariant="light"
+          header="Local Changes"
+          :changes="changes.local.results"
+          type="local"
+        />
 
         <v-icon name="sync-alt" class="text-info mt-2" scale="3" spin/>
 
-        <b-card bg-variant="dark" text-variant="white" header="Remote Changes" class="text-center">
-          <b-list-group variant="dark">
-            <b-list-group-item
-              v-for="(change, i) in changes.remote.results"
-              v-bind:key="i"
-              class="text-left"
-              button
-              v-b-toggle="'remote'+i"
-            >
-              <div v-if="!change.deleted">
-                <v-icon name="plus" class="text-success"/>
-                {{ change.doc._id + " - " + (change.doc.name ? change.doc.name : 'design') }}
-              </div>
-
-              <div v-else>
-                <v-icon name="minus" class="text-danger"/>
-                {{ change.doc._id }}
-              </div>
-
-              <b-collapse :id="'remote'+i" class="mt-2 border">
-                <pre>{{ JSON.stringify(change, undefined, 2) }}</pre>
-              </b-collapse>
-            </b-list-group-item>
-          </b-list-group>
-        </b-card>
+        <sync-tab
+          bgVariant="dark"
+          textVariant="white"
+          header="Remote Changes"
+          :changes="changes.remote.results"
+          type="remote"
+        />
       </b-card-group>
     </b-modal>
   </div>
 </template>
 
 <script>
+import SyncTap from './SyncTab';
+
 export default {
   data: () => ({
     changes: {
@@ -89,6 +54,9 @@ export default {
     async fetchChanges() {
       this.changes = await this.$db.changes();
     }
+  },
+  components: {
+    'sync-tab': SyncTap
   }
 };
 </script>

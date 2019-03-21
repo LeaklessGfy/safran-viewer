@@ -95,7 +95,7 @@ class ExperimentParser {
     for (let i = FIRST_COLUMN_SAMPLE; i < this._metadata.measures.length; i++) {
       if (samples[i] && samples[i].toLowerCase() !== 'nan') {
         const sample = {
-          type: 'sample',
+          typeX: 'sample',
           value: samples[i],
           time: samples[1],
         };
@@ -122,7 +122,7 @@ class ExperimentParser {
 
   _parseMeasure(value) {
     return {
-      type: 'measure',
+      typeX: 'measure',
       name: value,
       experiment: this._experimentId
     };
@@ -138,7 +138,7 @@ class ExperimentParser {
   _parseAlarm(line) {
     const arr = this._parse(line, 3);
     this._metadata.alarms.push({
-      type: 'alarm',
+      typeX: 'alarm',
       reference: null,
       name: null,
       state: null,

@@ -154,14 +154,29 @@ export default {
       );
       const dbInfo = await this.$db.insertExperiment(experiment);
 
+      if (dbInfo.ok) {
+        this.$notify({
+          type: 'success',
+          title: 'Succès',
+          text: 'Insertion de l\'essai avec id : ' + dbInfo.id
+        });
+      } else {
+        this.$notify({
+          type: 'error',
+          title: 'Erreur',
+          text: dbInfo
+        });
+        return;
+      }
+
       if (!this.local) {
         return;
       }
 
       callWorker(dbInfo.id, this.experimentFile, this.alarmsFile, metadata => {
         experiment.updateMetadata(metadata);
-        this.$db.editExperiment(dbInfo.rev, experiment)
-        .then(v => console.log(v));
+        this.$db.editExperiment(dbInfo.rev, experiment).then(() => this.$notify('Edition essai'));
+        this.$db.insertMeasures(metadata.measures).then(() => this.$notify('Insertion des mesures'));
       }).subscribe(
         progress => this.progress = progress,
         err => this.$notify({

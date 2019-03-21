@@ -1,5 +1,5 @@
 {
-  "type": "experiment",
+  "_type": "experiment",
   "reference": "experiment1",
   "name": "experiment1",
   "begin_time": "",

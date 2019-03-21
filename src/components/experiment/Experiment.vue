@@ -22,9 +22,13 @@
 import Chart from './Chart';
 
 export default {
+  mounted() {
+    this.$db.fetchMeasuresTest(this.$route.params.id);
+  },
   subscriptions() {
     return {
-      experiment: this.$db.fetchExperiment(this.$route.params.id)
+      experiment: this.$db.fetchExperiment(this.$route.params.id),
+      //measures: this.$db.fetchMeasures(this.$route.params.id)
     }
   },
   components: {

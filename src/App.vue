@@ -16,7 +16,8 @@ export default {
       this.$notify({
         type: 'error',
         title: 'Erreur',
-        text: err
+        text: err,
+        duration: 5000
       })
     });
   },

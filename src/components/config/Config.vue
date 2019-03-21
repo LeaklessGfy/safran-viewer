@@ -11,6 +11,7 @@
 
     <div class="border mt-2 p-2">
       <p>Base de donnée courante : {{ db }}</p>
+      <b-button variant="primary" @click="install" class="mr-2">Installer la BDD {{ db }}</b-button>
       <b-button variant="warning" @click="compact" class="mr-2">Compacter la BDD {{ db }}</b-button>
       <b-button variant="danger" @click="remove">Supprimer la BDD {{ db }}</b-button>
     </div>
@@ -33,13 +34,23 @@ export default {
     onReset() {
 
     },
+    install() {
+      this.$db.install()
+      .then(db => {
+        this.$notify({
+          type: 'success',
+          title: 'Succès',
+          text: `La base de données ${db} à bien été installée`
+        });
+      })
+    },
     remove() {
       this.$db.remove()
       .then(db => {
         this.$notify({
           type: 'success',
           title: 'Succès',
-          text: `La base de donnée ${db} à bien été supprimée`
+          text: `La base de données ${db} à bien été supprimée`
         });
       });
     },

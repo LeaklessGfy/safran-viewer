@@ -1,6 +1,7 @@
 import PouchDB from 'pouchdb';
 import { Subject, BehaviorSubject } from 'rxjs';
 import Experiment from './models/experiment';
+import { BULK_DESIGNS, MAPPER_DESIGNS } from './designs/designs';
 
 const LOCAL_DB_NAME = 'safran';
 const REMOTE_DB_NAME = 'http://localhost:5984/safran';
@@ -39,6 +40,7 @@ class Database {
     this._experimentsSubject = new BehaviorSubject([]);
     this._benchsSubject = new BehaviorSubject([]);
     this._campaignsSubject = new BehaviorSubject([]);
+    this._measuresSubject = new BehaviorSubject([]);
     this._dbSubject = new BehaviorSubject(this.getCurrent());
     this._remoteNameSubject = new BehaviorSubject(this.getRemoteDbName());
     this._pendings = {
@@ -95,6 +97,26 @@ class Database {
     return this._campaignsSubject;
   }
 
+  fetchMeasures(id) {
+    this._db.query('measures/findAll', { key: [null, id] })
+    .then(docs => this._measuresSubject.next(docs))
+    .catch(err => {
+      this._errorsSubject.next(err);
+      this._measuresSubject.next([]);
+    });
+    return this._measuresSubject;
+  }
+
+  fetchMeasuresTest(id) {
+    this._db.query(function(doc) {
+      if (doc.typeX === 'measure') {
+        emit(doc.experiment, { name: doc.name, type: doc.type, unit: doc.unit });
+      }
+    }, { key: id })
+    .then(v => console.log(v))
+    .catch(err => console.error(err));
+  }
+
   fetchPendings() {
     for (let pending of Object.values(this._pendings)) {
       if (pending) {
@@ -139,6 +161,18 @@ class Database {
     await this._db.remove(doc);
   }
 
+  async insertMeasures(measures) {
+    try {
+      const resp = await this._db.bulkDocs(measures)
+      const errors = resp.filter(r => !r.ok);
+      if (errors.length > 0) {
+        this._errorsSubject.next(errors.length + ' errors occured');
+      }
+    } catch (err) {
+      this._errorsSubject.next(err);
+    }
+  }
+
   async changes() {
     try {
       const local = await this._dbLocal.changes({
@@ -173,6 +207,29 @@ class Database {
     this._setLastSync(REMOTE, changes.remote.last_seq);
     await this._db.sync(this._getSyncDB());
     this._updateSubjects();
+  }
+
+  async install() {
+    try {
+      const resp = await this._db.bulkGet({ docs: BULK_DESIGNS });
+      const installing = resp.results.filter(result => {
+        if (result.docs[0].error || !result.docs[0].ok || result.docs[0].ok.views.length < 1) {
+          return true;
+        }
+        return false;
+      });
+
+      for (let install of installing) {
+        const result = await this._db.put(MAPPER_DESIGNS[install.id]);
+        if (!result.ok) {
+          this._errorsSubject.next('Error with install of ' + install.id);
+        }
+      }
+
+      return this.getCurrent();
+    } catch (err) {
+      this._errorsSubject.next(err);
+    }
   }
 
   async remove() {

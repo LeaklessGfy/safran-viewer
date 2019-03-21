@@ -1,5 +1,5 @@
 export default class Experiment {
-  type;
+  typeX;
   reference;
   name;
   beginTime;
@@ -9,7 +9,7 @@ export default class Experiment {
   isLocal;
 
   constructor(reference, name, bench, campaign, isLocal) {
-    this.type = 'experiment';
+    this.typeX = 'experiment';
     this.reference = reference;
     this.name = name;
     this.bench = bench;
