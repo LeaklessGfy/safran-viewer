@@ -14,7 +14,7 @@
       </b-card-text>
     </b-card>
 
-    <chart class="mt-2" refName="chart1"/>
+    <chart v-if="experiment._id" class="mt-2" refName="chart1" :experiment="experiment"/>
   </b-container>
 </template>
 

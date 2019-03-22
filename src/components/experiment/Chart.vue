@@ -6,7 +6,10 @@
           v-model="startTime"
           :options="options"
           class="form-control"
-          placeholder="hh:mm:ss,msss"
+          placeholder="hh:mm:ss,ssss"
+          :raw="false"
+          @blur.native="onTimeChangeEnd"
+          @keyup.native="onTimeChangeEnd"
         />
       </b-col>
       <b-col>
@@ -19,7 +22,9 @@
           v-model="endTime"
           :options="options"
           class="form-control"
-          placeholder="hh:mm:ss,msss"
+          placeholder="hh:mm:ss,ssss"
+          :raw="false"
+          @blur.native="onTimeChangeEnd"
         />
       </b-col>
     </b-row>
@@ -66,6 +71,7 @@
 
 <script>
 import Chart from '../../services/chart';
+import { dateToTime, stringToDate, timeToDate } from '../../services/date';
 
 export default {
   data() {
@@ -77,7 +83,7 @@ export default {
       limit: this.$db.getLimit(),
       options: {
         blocks: [2, 2, 2, 4],
-        delimiters: [':', ':', ','],
+        delimiters: [':', ':', '.'],
         numericOnly: true,
         numeralPositiveOnly: true,
         stripLeadingZeroes: false
@@ -87,7 +93,8 @@ export default {
     }
   },
   props: {
-    refName: String
+    refName: String,
+    experiment: Object
   },
   subscriptions() {
     return {
@@ -95,12 +102,33 @@ export default {
     }
   },
   mounted() {
-    this.chart = new Chart(this.$refs[this.refName], this.startTime, this.endTime);
+    const startDate = stringToDate(this.experiment.beginTime);
+    const endDate = stringToDate(this.experiment.endTime);
+
+    this.startTime = dateToTime(startDate);
+    this.endTime = dateToTime(endDate);
+
+    this.chart = new Chart(this.$refs[this.refName], startDate, endDate, {
+      onScaleChange: (startDate, endDate) => {
+        this.startTime = dateToTime(startDate);
+        this.endTime = dateToTime(endDate);
+      }
+    });
   },
   beforeDestroy() {
     this.chart.destroy();
   },
   methods: {
+    onTimeChangeEnd(e) {
+      if (!this.chart) {
+        return;
+      }
+      if (e.keyCode === undefined || e.keyCode === 13) {
+        const startDate = timeToDate(this.startTime, this.experiment.beginTime);
+        const endDate = timeToDate(this.endTime, this.experiment.endTime);
+        this.chart.zoom(startDate, endDate);
+      }
+    },
     onMeasuresShow() {
       if (this.measures.length < 1) {
         this.$db.fetchMeasures(this.$route.params.id, this.currentPage);
@@ -138,7 +166,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .chart {
   width: 100%;
   height: 500px;
