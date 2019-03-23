@@ -6,7 +6,7 @@
       </b-input-group-text>
       <b-form-input v-model="search" @keyup="onSearch"/>
     </b-input-group>
-    <b-list-group :variant="bgVariant" style="overflow:scroll;max-height:250px">
+    <b-list-group :variant="bgVariant" style="overflow-y:scroll;max-height:250px">
       <b-list-group-item
         v-for="(change, i) in results ? results : changes"
         v-bind:key="i"
@@ -24,8 +24,8 @@
           {{ change.doc._id }}
         </div>
 
-        <b-collapse :id="type+i" class="mt-2 p-2 border" style="overflow:scroll;">
-          <pre>{{ JSON.stringify(change, undefined, 2) }}</pre>
+        <b-collapse :id="type+i" class="mt-2 p-2 border" style="background:#fff;">
+          <pre style="overflow-x:scroll;">{{ JSON.stringify(change, undefined, 2) }}</pre>
         </b-collapse>
       </b-list-group-item>
     </b-list-group>
@@ -48,7 +48,7 @@ export default {
     type: String
   },
   methods: {
-    onSearch(e) {
+    onSearch() {
       this.results = this.$props.changes.filter(result => result.doc._id.includes(this.search));
     }
   }

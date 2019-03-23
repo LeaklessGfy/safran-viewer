@@ -31,9 +31,6 @@ export default {
       e.preventDefault();
       this.$db.setRemoteDbName(this.remoteDbName);
     },
-    onReset() {
-
-    },
     install() {
       this.$db.install()
       .then(db => {

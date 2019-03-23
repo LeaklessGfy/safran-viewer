@@ -38,7 +38,7 @@
       @ok="onConfirmDelete"
       ok-variant="danger"
       ok-title="Supprimer"
-      size="lg"
+      size="xl"
     >
       <p class="my-4">Êtes-vous sur de vouloir supprimer cet experiment ?</p>
     </b-modal>

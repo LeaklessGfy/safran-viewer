@@ -28,7 +28,7 @@
       </b-form-group>
 
       <div class="border p-3 mb-3">
-        <b-form-group label="Banc">
+        <b-form-group v-if="benchs.length" label="Banc">
           <b-form-select v-model="bench" :options="benchs">
             <template slot="first">
               <option :value="newBench">New...</option>
@@ -57,7 +57,7 @@
       </div>
 
       <div class="border p-3 mb-3">
-        <b-form-group label="Campagne">
+        <b-form-group v-if="campaigns.length" label="Campagne">
           <b-form-select v-model="campaign" :options="campaigns">
             <template slot="first">
               <option :value="newCampaign">New...</option>
@@ -83,6 +83,7 @@
           :state="Boolean(experimentFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
+          required
         />
       </b-form-group>
 
@@ -110,14 +111,14 @@
 import { map } from 'rxjs/operators';
 import { callWorker } from '../../services/worker';
 
-const defaultBench = { reference: '', name: '' };
-const defaultCampaign = { id12c: '' };
+const defaultBench = { reference: 'test', name: 'test' };
+const defaultCampaign = { id12c: 'test' };
 
 export default {
   data: () => ({
     local: true,
-    reference: '',
-    name: '',
+    reference: 'test',
+    name: 'test',
     bench: defaultBench,
     campaign: defaultCampaign,
     newBench: defaultBench,
@@ -152,51 +153,26 @@ export default {
         this.campaign,
         this.$db.getCurrent() === 'local'
       );
-      const dbInfo = await this.$db.insertExperiment(experiment);
-
-      if (dbInfo.ok) {
-        this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: 'Insertion de l\'essai avec id : ' + dbInfo.id
-        });
-      } else {
-        this.$notify({
-          type: 'error',
-          title: 'Erreur',
-          text: dbInfo
-        });
-        return;
-      }
 
       if (!this.local) {
         return;
       }
 
-      callWorker(dbInfo.id, this.experimentFile, this.alarmsFile, metadata => {
-        experiment.updateMetadata(metadata);
-        this.$db.editExperiment(dbInfo.rev, experiment).then(() => this.$notify('Edition essai'));
-        this.$db.insertMeasures(metadata.measures).then(() => this.$notify('Insertion des mesures'));
+      callWorker(this.$db, experiment, this.experimentFile, this.alarmsFile, () => {
+        this.$notify('Import complete');
       }).subscribe(
         progress => this.progress = progress,
-        err => this.$notify({
-          type: 'error',
-          title: 'Error',
-          text: err.message
-        })
+        err => { console.error(err); }
       );
     },
     onReset() {
       this.local = true;
       this.reference = '';
       this.name = '';
-      this.benchId = null;
-      this.benchName = '';
-      this.benchReference = '';
-      this.campaignId = null;
-      this.campaignId12c = '';
-      this.experiment = null;
-      this.alarms = null;
+      this.bench = defaultBench;
+      this.campaign = defaultCampaign;
+      this.experimentFile = null;
+      this.alarmsFile = null;
       this.progress = 0;
     }
   }

@@ -16,14 +16,13 @@ class ExperimentParser {
       beginTime: null,
       endTime: null,
       measures: [],
-      alarms: [],
-      samples: []
+      alarms: []
     }
   }
 
   async parse() {
     await this._parseHeader();
-    await this._parseMeasures()
+    await this._parseMeasures();
     await this._parseSamples(6);
     if (this._alarmsReader) {
       await this._parseAlarms(0);
@@ -99,25 +98,26 @@ class ExperimentParser {
           value: samples[i],
           time: samples[1],
         };
-        this._metadata.samples.push(sample);
         this._metadata.measures[i - FIRST_COLUMN_SAMPLE].samples.push(sample);
       }
     }
   }
 
   async _parseAlarms(index) {
-    const info = await this._readLines(this._alarmsReader, index);
-    if (info.err) {
-      throw new Error(info.err);
-    }
-    for (let line of info.lines) {
-      if (!line) continue;
-      this._parseAlarm(line);
-    }
-    this._observer.onProgress(info.progress);
-    if (!info.isEof) {
-      await this._parseAlarms(info.index + 1);
-    }
+    this._readLines(this._alarmsReader, index)
+    .then(info => {
+      if (info.err) {
+        throw new Error(info.err);
+      }
+      for (let line of info.lines) {
+        if (!line) continue;
+        this._parseAlarm(line);
+      }
+      this._observer.onProgress(info.progress);
+      if (!info.isEof) {
+        return this._parseAlarms(info.index + 1);
+      }
+    });
   }
 
   _parseMeasure(value) {
@@ -166,14 +166,14 @@ class ExperimentParser {
 
   _readLines(reader, index) {
     return new Promise(resolve => {
-      reader.readSomeLines(index, function (err, index, lines, isEof, progress) {
+      reader.readLines(index, 1, function(err, index, lines, isEof, progress) {
         resolve({
           err,
           index,
           lines,
           isEof,
           progress
-        })
+        });
       });
     });
   }
@@ -187,7 +187,7 @@ class ExperimentParser {
   _parse(line, min) {
     const arr = line.split(';');
     if (arr.length < min) {
-      throw new Error('Malformed line ' + line);
+      throw new Error('Malformed line ' + line + ', expected ' + min + ' length and got : ' + arr.length);
     }
     return arr;
   }

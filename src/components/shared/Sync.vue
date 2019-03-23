@@ -6,7 +6,7 @@
     <b-modal
       id="syncModal"
       title="Synchroniser"
-      size="lg"
+      size="xl"
       header-bg-variant="info"
       header-text-variant="light"
       ok-variant="info"

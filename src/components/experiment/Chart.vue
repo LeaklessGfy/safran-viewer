@@ -12,11 +12,13 @@
           @keyup.native="onTimeChangeEnd"
         />
       </b-col>
+
       <b-col>
         <b-button v-b-modal.measuresModal>
           <v-icon name="chart-line"/> Mesures
         </b-button>
       </b-col>
+
       <b-col>
         <cleave
           v-model="endTime"
@@ -25,20 +27,21 @@
           placeholder="hh:mm:ss,ssss"
           :raw="false"
           @blur.native="onTimeChangeEnd"
+          @keyup.native="onTimeChangeEnd"
         />
       </b-col>
     </b-row>
     
     <div class="chart" :ref="refName"/>
 
-    <b-modal id="measuresModal" title="Mesures" @show="onMeasuresShow" @ok="onOk" size="lg">
+    <b-modal id="measuresModal" title="Mesures" @show="onMeasuresShow" @ok="onOk" size="xl">
       <b-list-group>
         <b-list-group-item
           v-for="measure in measures.rows"
           v-bind:key="measure.id"
           class="d-flex justify-content-between align-items-center"
         >
-          {{ measure.value.name }} - {{ measure.value.unit }}
+          {{ measure.value.name }} - {{ measure.value.unit }} - {{ measure.value.samples }}
           <b-button
             v-if="!tmpMeasures.some(m => m.id === measure.id)"
             @click="() => onClickAdd(measure)"

@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-export const callWorker = (experimentId, experimentFile, alarmsFile, onComplete) => {
+export const callWorker = (db, experiment, experimentFile, alarmsFile, onComplete) => {
   return new Observable(subscriber => {
     const worker = new Worker('worker.js');
 
@@ -17,6 +17,6 @@ export const callWorker = (experimentId, experimentFile, alarmsFile, onComplete)
       return subscriber.error(err);
     }, false);
 
-    worker.postMessage({ experimentId, experimentFile, alarmsFile });
+    worker.postMessage({ db, experiment, experimentFile, alarmsFile });
   });
 }

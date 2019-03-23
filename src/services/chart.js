@@ -2,6 +2,8 @@ import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
 
+import { timeToDate } from './date';
+
 am4core.useTheme(am4themes_animated);
 
 const AlarmTooltip = `<center><strong>{name}</strong></center>
@@ -266,6 +268,7 @@ export default class Chart {
 
   _normalizeSamples(samples, unit) {
     return samples.map(sample => {
+      /*
       const min = sample.time.split(':')[0];
       const sec = sample.time.split(':')[1];
       const milli = sec.split(',')[1];
@@ -274,6 +277,9 @@ export default class Chart {
       time.setMinutes(parseInt(min, 10));
       time.setSeconds(parseInt(sec, 10));
       time.setMilliseconds(parseInt(milli, 10));
+      */
+
+      const time = timeToDate(sample.time, this._date);
 
       return {
         value: parseInt(sample.value, 10),

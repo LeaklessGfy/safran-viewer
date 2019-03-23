@@ -118,16 +118,6 @@ class Database {
     });
   }
 
-  fetchMeasuresTest(id) {
-    this._db.query(function(doc) {
-      if (doc.typeX === 'measure') {
-        emit(doc.experiment, { name: doc.name, type: doc.type, unit: doc.unit });
-      }
-    }, { key: id })
-    .then(v => console.log(v))
-    .catch(err => console.error(err));
-  }
-
   fetchPendings() {
     for (let pending of Object.values(this._pendings)) {
       if (pending) {
@@ -146,9 +136,18 @@ class Database {
     return this._remoteNameSubject;
   }
 
-  async insertExperiment(experiment) {
+  async insertDoc(doc) {
     try {
-      return await this._db.post(experiment);
+      return await this._db.post(doc);
+    } catch (err) {
+      this._errorsSubject.next(err);
+      return null;
+    }
+  }
+
+  async insertMultipleDocs(docs) {
+    try {
+      return await this._db.bulkDocs(docs);
     } catch (err) {
       this._errorsSubject.next(err);
       return null;
@@ -172,26 +171,16 @@ class Database {
     await this._db.remove(doc);
   }
 
-  async insertMeasures(measures) {
-    try {
-      const resp = await this._db.bulkDocs(measures)
-      const errors = resp.filter(r => !r.ok);
-      if (errors.length > 0) {
-        this._errorsSubject.next(errors.length + ' errors occured');
-      }
-    } catch (err) {
-      this._errorsSubject.next(err);
-    }
-  }
-
   async changes() {
     try {
       const local = await this._dbLocal.changes({
         since: parseInt(this._getLastSync(LOCAL), 10),
+        limit: LIMIT,
         include_docs: true
       });
       const remote = await this._dbRemote.changes({
         since: this._getLastSync(REMOTE),
+        limit: LIMIT,
         include_docs: true
       });
 
@@ -222,18 +211,17 @@ class Database {
 
   async install() {
     try {
-      const resp = await this._db.bulkGet({ docs: BULK_DESIGNS });
-      const installing = resp.results.filter(result => {
-        if (result.docs[0].error || !result.docs[0].ok || result.docs[0].ok.views.length < 1) {
-          return true;
-        }
-        return false;
-      });
+      const bulkGet = await this._db.bulkGet({ docs: BULK_DESIGNS });
 
-      for (let install of installing) {
-        const result = await this._db.put(MAPPER_DESIGNS[install.id]);
-        if (!result.ok) {
-          this._errorsSubject.next('Error with install of ' + install.id);
+      for (let result of bulkGet.results) {
+        for (let doc of result.docs) {
+          if (doc.ok && doc.ok.views && Object.keys(doc.ok.views).length > 0) {
+            await this._db.remove(doc.ok._id, doc.ok._rev);
+          }
+        }
+        const put = await this._db.put(MAPPER_DESIGNS[result.id]);
+        if (!put.ok) {
+          throw new Error('Error with install of ' + result.id);
         }
       }
 
