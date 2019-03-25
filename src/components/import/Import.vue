@@ -109,7 +109,7 @@
 
 <script>
 import { map } from 'rxjs/operators';
-import { callWorker } from '../../services/worker';
+import ImportService from '../../services/import';
 
 const defaultBench = { reference: 'test', name: 'test' };
 const defaultCampaign = { id12c: 'test' };
@@ -158,12 +158,18 @@ export default {
         return;
       }
 
-      callWorker(this.$db, experiment, this.experimentFile, this.alarmsFile, () => {
-        this.$notify('Import complete');
-      }).subscribe(
+      const service = new ImportService(this.$db, experiment);
+      const observable = await service.init(this.experimentFile, this.alarmsFile);
+      observable.subscribe(
         progress => this.progress = progress,
-        err => { console.error(err); }
+        err => { console.error(err); },
+        () => this.$notify({
+          type: 'success',
+          title: 'Succès',
+          text: 'Import réussi'
+        })
       );
+      service.import();
     },
     onReset() {
       this.local = true;

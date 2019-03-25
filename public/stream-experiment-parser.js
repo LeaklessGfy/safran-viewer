@@ -1,20 +1,28 @@
+self.importScripts('https://cdn.jsdelivr.net/npm/comlinkjs@3.1.1/umd/comlink.js');
+self.importScripts('navigator.js');
+
 const FIRST_COLUMN_SAMPLE = 2;
+
+const DEFAULT_CONFIG = {
+  chunkSize: 1024 * 100,
+  throwOnLongLines: true
+};
 
 class ExperimentParser {
   _experimentReader;
   _alarmsReader;
   _observer;
 
-  constructor(experimentReader, alarmsReader, observer) {
-    this._experimentReader = experimentReader;
-    this._alarmsReader = alarmsReader;
-    this._observer = observer;
+  constructor(experimentFile, alarmsFile, observer) {
+    this._experimentReader = new LineNavigator(experimentFile, DEFAULT_CONFIG);
+    //this._alarmsReader = alarmsFile ? new LineNavigator(alarmsFile, DEFAULT_CONFIG) : null;
+    //this._observer = observer;
   }
 
   async parseMetadata() {
     const info = await this._readLine(this._experimentReader, 0, 2);
     this._checkLine(info, 2);
-    this._observer.onProgress(info.progress);
+    //this._observer.onProgress(info.progress);
 
     const arr1 = this._parse(info.lines[0], 2);
     const arr2 = this._parse(info.lines[1], 2);
@@ -27,7 +35,7 @@ class ExperimentParser {
   async parseMeasures(experimentId) {
     const info = await this._readLine(this._experimentReader, 2, 1);
     this._checkLine(info, 1);
-    this._observer.onProgress(info.progress);
+    //this._observer.onProgress(info.progress);
 
     const measures = this._collector(
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
@@ -49,7 +57,7 @@ class ExperimentParser {
   async _parseTypesUnits() {
     const info = await this._readLine(this._experimentReader, 3, 3);
     this._checkLine(info, 3);
-    this._observer.onProgress(info.progress);
+    //this._observer.onProgress(info.progress);
 
     const types = this._collector(
       this._parse(info.lines[1], FIRST_COLUMN_SAMPLE),
@@ -193,3 +201,5 @@ class ExperimentParser {
     return collected;
   }
 }
+
+Comlink.expose(ExperimentParser, self);
