@@ -12,7 +12,7 @@
       </b-navbar-nav>
 
       <b-navbar-nav class="ml-auto">
-        <b-button :variant="db === 'local' ? 'light' : 'dark'" size="sm" class="mx-2" @click="changeDb">
+        <b-button :variant="db === 'local' ? 'light' : 'dark'" size="sm" class="mx-2" @click="onClickDB">
           <v-icon name="database"/> {{ db.toUpperCase() }}
         </b-button>
         <sync/>
@@ -25,13 +25,13 @@
 import Sync from './Sync';
 
 export default {
-  subscriptions() {
+  data() {
     return {
-      db: this.$db.fetchCurrentDb()
-    }
+      db: 'remote'
+    };
   },
   methods: {
-    changeDb() {
+    onClickDB() {
       this.$db.changeDb();
     }
   },

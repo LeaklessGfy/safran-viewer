@@ -32,7 +32,7 @@ class ExperimentParser {
     return { beginTime, endTime };
   }
 
-  async parseMeasures(experimentId) {
+  async parseMeasures() {
     const info = await this._readLine(this._experimentReader, 2, 1);
     this._checkLine(info, 1);
     this._observer.onProgress(info.progress);
@@ -41,14 +41,13 @@ class ExperimentParser {
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
       FIRST_COLUMN_SAMPLE,
       v => v,
-      v => this._parseMeasure(v, experimentId)
+      v => this._parseMeasure(v)
     );
 
     const { types, units } = await this._parseTypesUnits();
     for (let i in types) {
       measures[i].type = types[i];
       measures[i].unit = units[i];
-      //measures[i].samples = [];
     }
 
     return measures;
@@ -131,31 +130,27 @@ class ExperimentParser {
     return alarms;
   }
 
-  _parseMeasure(name, experiment) {
+  _parseMeasure(name) {
     return {
-      typeX: 'measure',
-      name,
-      experiment
+      name
     };
   }
 
-  _parseSample(value, time, measure) {
+  _parseSample(value, date, measure) {
     return {
-      typeX: 'sample',
       value,
-      time,
+      date,
       measure
     };
   }
 
-  _parseAlarm(time, level, message, experiment) {
+  _parseAlarm(date, level, message, experiment) {
     return {
-      typeX: 'alarm',
       //reference: null,
       //name: null,
       //state: null,
       //order: null,
-      time, // LOCAL DATE TIME
+      date, // LOCAL DATE TIME
       level: parseInt(level, 10),
       message,
       experiment

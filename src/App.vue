@@ -11,7 +11,7 @@ import Navbar from './components/shared/Navbar';
 
 export default {
   mounted() {
-    this.$db.fetchErrors()
+    this.$db.getErrors()
     .subscribe(err => {
       this.$notify({
         type: 'error',

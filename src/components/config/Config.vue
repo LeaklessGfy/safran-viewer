@@ -4,7 +4,7 @@
 
     <b-form @submit="onSubmit" class="border p-2">
       <b-form-group label="Database URL">
-        <b-form-input v-model="remoteDbName" />
+        <b-form-input v-model="remoteHost" />
       </b-form-group>
       <b-button type="submit" variant="primary">Enregistrer</b-button>
     </b-form>
@@ -12,19 +12,18 @@
     <div class="border mt-2 p-2">
       <p>Base de donnée courante : {{ db }}</p>
       <b-button variant="primary" @click="install" class="mr-2">Installer la BDD {{ db }}</b-button>
-      <b-button variant="warning" @click="compact" class="mr-2">Compacter la BDD {{ db }}</b-button>
-      <b-button variant="danger" @click="remove">Supprimer la BDD {{ db }}</b-button>
+      <b-button variant="danger" @click="drop">Supprimer la BDD {{ db }}</b-button>
     </div>
   </b-container>
 </template>
 
 <script>
 export default {
-  subscriptions() {
+  data() {
     return {
-      db: this.$db.fetchCurrentDb(),
-      remoteDbName: this.$db.fetchRemoteDbName()
-    }
+      db: 'remote',
+      remoteHost: ''
+    };
   },
   methods: {
     onSubmit(e) {
@@ -33,32 +32,22 @@ export default {
     },
     install() {
       this.$db.install()
-      .then(db => {
+      .then(() => {
         this.$notify({
           type: 'success',
           title: 'Succès',
-          text: `La base de données ${db} à bien été installée`
+          text: `La base de données ${this.db} à bien été installée`
         });
       })
     },
-    remove() {
-      this.$db.remove()
-      .then(db => {
+    drop() {
+      this.$db.drop()
+      .then(() => {
         this.$notify({
           type: 'success',
           title: 'Succès',
-          text: `La base de données ${db} à bien été supprimée`
+          text: `La base de données ${this.db} à bien été supprimée`
         });
-      });
-    },
-    compact() {
-      this.$db.compact()
-      .then(db => {
-        this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: `La base de donées ${db} à bien été compactée`
-        })
       });
     }
   }

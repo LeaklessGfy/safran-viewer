@@ -2,19 +2,18 @@
   <b-container fluid>
     <h1>Experiment</h1>
     
-    <b-card header="Info" :title="experiment.name">
-      <b-card-text>
-        id : {{ experiment._id }}<br/>
-        name : {{ experiment.name }}<br/>
-        reference : {{ experiment.reference }}<br/>
-        begin : {{ experiment.beginTime }}<br/>
-        end : {{ experiment.endTime }}<br/>
-        bench : {{ experiment.bench ? experiment.bench.name : '' }}<br/>
-        campaign : {{ experiment.campaign ? experiment.campaign.id12c : '' }}
-      </b-card-text>
+    <b-card no-body>
+      <b-card-header header-tag="header">
+        <b-button block href="#" v-b-toggle.accordion1 variant="info">Info</b-button>
+      </b-card-header>
+      <b-collapse id="accordion1">
+        <b-card-body class="p-0">
+          <b-table bordered fixed striped hover class="border m-0" :items="[experiment]" />
+        </b-card-body>
+      </b-collapse>
     </b-card>
 
-    <chart v-if="experiment._id" class="mt-2" refName="chart1" :experiment="experiment"/>
+    <chart v-if="experiment.id" class="mt-2" refName="chart1" :experiment="experiment"/>
   </b-container>
 </template>
 

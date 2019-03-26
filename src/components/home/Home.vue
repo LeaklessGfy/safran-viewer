@@ -4,17 +4,17 @@
 
     <b-list-group class="mt-3">
       <b-list-group-item 
-        v-for="experiment in experiments.rows"
-        v-bind:key="experiment.doc._id"
-        :href="'#/experiment/' + experiment.doc._id"
+        v-for="experiment in experiments"
+        v-bind:key="experiment.id"
+        :href="'#/experiment/' + experiment.id"
         class="d-flex justify-content-between align-items-center"
       >
         <div>
-          {{ experiment.doc.name }} <b-badge :variant="experiment.doc.isLocal ? 'light' : 'dark'">
-            {{ experiment.doc.isLocal ? "LOCAL" : "REMOTE" }}
+          {{ experiment.name }} <b-badge :variant="experiment.isLocal ? 'light' : 'dark'">
+            {{ experiment.isLocal ? "LOCAL" : "REMOTE" }}
           </b-badge>
         </div>
-        <b-button variant="danger" @click="e => onClickDelete(e, experiment.doc)">
+        <b-button variant="danger" @click="e => onClickDelete(e, experiment)">
           <v-icon name="trash"/>
         </b-button>
       </b-list-group-item>
@@ -52,7 +52,7 @@ export default {
       currentPage: 1,
       limit: this.$db.getLimit(),
       show: false,
-      doc: null
+      experiment: null
     }
   },
   subscriptions() {
@@ -64,16 +64,16 @@ export default {
     onPageChange(page) {
       this.$db.fetchExperiments(page);
     },
-    onClickDelete(e, doc) {
+    onClickDelete(e, experiment) {
       e.preventDefault();
-      if (doc) {
-        this.doc = doc;
+      if (experiment) {
+        this.experiment = experiment;
         this.show = true;
       }
     },
     async onConfirmDelete() {
-      if (this.doc) {
-        await this.$db.deleteExperiment(this.doc);
+      if (this.experiment) {
+        await this.$db.removeExperiment(this.experiment.id);
       }
       this.$db.fetchExperiments(this.currentPage);
       this.show = false;
