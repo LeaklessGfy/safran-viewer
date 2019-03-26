@@ -15,14 +15,14 @@ class ExperimentParser {
 
   constructor(experimentFile, alarmsFile, observer) {
     this._experimentReader = new LineNavigator(experimentFile, DEFAULT_CONFIG);
-    //this._alarmsReader = alarmsFile ? new LineNavigator(alarmsFile, DEFAULT_CONFIG) : null;
-    //this._observer = observer;
+    this._alarmsReader = alarmsFile ? new LineNavigator(alarmsFile, DEFAULT_CONFIG) : null;
+    this._observer = observer ? observer : {onProgress: () => {}};
   }
 
   async parseMetadata() {
     const info = await this._readLine(this._experimentReader, 0, 2);
     this._checkLine(info, 2);
-    //this._observer.onProgress(info.progress);
+    this._observer.onProgress(info.progress);
 
     const arr1 = this._parse(info.lines[0], 2);
     const arr2 = this._parse(info.lines[1], 2);
@@ -35,7 +35,7 @@ class ExperimentParser {
   async parseMeasures(experimentId) {
     const info = await this._readLine(this._experimentReader, 2, 1);
     this._checkLine(info, 1);
-    //this._observer.onProgress(info.progress);
+    this._observer.onProgress(info.progress);
 
     const measures = this._collector(
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
@@ -57,7 +57,7 @@ class ExperimentParser {
   async _parseTypesUnits() {
     const info = await this._readLine(this._experimentReader, 3, 3);
     this._checkLine(info, 3);
-    //this._observer.onProgress(info.progress);
+    this._observer.onProgress(info.progress);
 
     const types = this._collector(
       this._parse(info.lines[1], FIRST_COLUMN_SAMPLE),
@@ -105,6 +105,10 @@ class ExperimentParser {
   async parseAlarms(experimentId) {
     let isEof = false;
     const alarms = [];
+
+    if (!this._alarmsReader) {
+      return alarms;
+    }
 
     for (let i = 0; !isEof; i++) {
       const info = await this._readLine(this._alarmsReader, i, 1);

@@ -31,7 +31,7 @@ const AlarmTooltip = `<center><strong>{name}</strong></center>
 const MeasureTooltip = `<center><strong>{name}</strong></br>
 <b align="center">{valueY}&nbsp;{unit}</b></center>`;
 
-export default class Chart {
+export default class ChartService {
   _date;
   _observer;
   _isZooming = false;
@@ -268,17 +268,6 @@ export default class Chart {
 
   _normalizeSamples(samples, unit) {
     return samples.map(sample => {
-      /*
-      const min = sample.time.split(':')[0];
-      const sec = sample.time.split(':')[1];
-      const milli = sec.split(',')[1];
-
-      const time = new Date(this._date);
-      time.setMinutes(parseInt(min, 10));
-      time.setSeconds(parseInt(sec, 10));
-      time.setMilliseconds(parseInt(milli, 10));
-      */
-
       const time = timeToDate(sample.time, this._date);
 
       return {

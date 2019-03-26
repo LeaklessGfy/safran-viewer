@@ -114,19 +114,21 @@ import ImportService from '../../services/import';
 const defaultBench = { reference: 'test', name: 'test' };
 const defaultCampaign = { id12c: 'test' };
 
+const defaultState = {
+  local: true,
+  reference: 'test',
+  name: 'test',
+  bench: defaultBench,
+  campaign: defaultCampaign,
+  newBench: defaultBench,
+  newCampaign: defaultCampaign,
+  experimentFile: null,
+  alarmsFile: null,
+  progress: 0
+};
+
 export default {
-  data: () => ({
-    local: true,
-    reference: 'test',
-    name: 'test',
-    bench: defaultBench,
-    campaign: defaultCampaign,
-    newBench: defaultBench,
-    newCampaign: defaultCampaign,
-    experimentFile: null,
-    alarmsFile: null,
-    progress: 0
-  }),
+  data: () => (defaultState),
   subscriptions() {
     return {
       benchs: this.$db.fetchBenchs().pipe(
@@ -158,11 +160,15 @@ export default {
         return;
       }
 
-      const service = new ImportService(this.$db, experiment);
-      const observable = await service.init(this.experimentFile, this.alarmsFile);
+      const service = new ImportService(this.$db);
+      const observable = await service.init(experiment, this.experimentFile, this.alarmsFile);
       observable.subscribe(
         progress => this.progress = progress,
-        err => { console.error(err); },
+        err => this.$notify({
+          type: 'error',
+          title: 'Erreur',
+          text: err
+        }),
         () => this.$notify({
           type: 'success',
           title: 'Succès',
@@ -172,14 +178,7 @@ export default {
       service.import();
     },
     onReset() {
-      this.local = true;
-      this.reference = '';
-      this.name = '';
-      this.bench = defaultBench;
-      this.campaign = defaultCampaign;
-      this.experimentFile = null;
-      this.alarmsFile = null;
-      this.progress = 0;
+      Object.assing(this.$data, defaultState);
     }
   }
 };

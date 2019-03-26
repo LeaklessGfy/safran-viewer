@@ -1,9 +1,8 @@
 import { parse, format } from 'date-fns';
-import frLocale from 'date-fns/locale/fr';
 
 export const stringToDate = str => parse(str);
 
-export const dateToTime = date => format(date, 'HH:mm:ss:SSSS', { locale: frLocale });
+export const dateToTime = date => format(date, 'HH:mm:ss:SSSS');
 
 export const timeToDate = (time, date) => {
   const timeSplit = time.split(':');

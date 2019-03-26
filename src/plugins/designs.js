@@ -82,7 +82,7 @@ export const SAMPLES_DESIGN = {
     findByMeasure: {
       map: function(doc) {
         if (doc.typeX === 'sample') {
-          emit(doc.time, doc.value);
+          emit(doc.measure, { time: doc.time, value: doc.value });
         }
       }.toString(),
       reduce: function(keys, values) {

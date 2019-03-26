@@ -12,30 +12,36 @@ export default class ImportService {
 
   _parser;
 
-  constructor(db, experiment) {
+  constructor(db) {
     this._db = db;
-    this._experiment = experiment;
     this._worker = new Worker('stream-experiment-parser.js');
+  }
+
+  async init(experiment, experimentFile, alarmsFile) {
+    const ExperimentParser = Comlink.proxy(this._worker);
+    this._experiment = experiment;
     this._subject = new Subject();
+    this._parser = await new ExperimentParser(
+      experimentFile,
+      alarmsFile,
+      Comlink.proxyValue({
+        onProgress: progress => this._subject.next(progress)
+      })
+    );
     this._idHolder = {
       experiment: null,
       measures: []
     };
-  }
-
-  async init(experimentFile, alarmsFile) {
-    this._parser = await new Comlink.proxy(this._worker)(
-      experimentFile,
-      alarmsFile
-    );
     return this._subject;
   }
 
   async import() {
     await this.importExperiment();
     await this.importMeasures();
-    this.importSamples();
-    this.importAlarms();
+    Promise.all([this.importSamples(), this.importAlarms()])
+    .then(() => {
+      this._subject.complete();
+    });
   }
 
   async importExperiment() {
@@ -50,7 +56,7 @@ export default class ImportService {
   }
 
   async importMeasures() {
-    const measures = await this._parser.parseMeasures(this._experiment.id);
+    const measures = await this._parser.parseMeasures(this._idHolder.experiment);
     const dbMeasures = await this._db.insertMultipleDocs(measures);
     const errors = dbMeasures.filter(info => !info.ok);
     if (errors.length > 0) {
@@ -62,7 +68,7 @@ export default class ImportService {
   async importSamples() {
     let isEof = false;
     let index = 6;
-    while (isEof) {
+    while (!isEof) {
       const samplesSub = await this._parser.parseSamples(this._idHolder.measures, SAMPLE_STACK_INSERT, index);
       if (samplesSub.isEof) {
         isEof = true;
@@ -82,6 +88,9 @@ export default class ImportService {
 
   async importAlarms() {
     const alarms = await this._parser.parseAlarms(this._idHolder.experiment);
+    if (alarms.length < 1) {
+      return;
+    }
     const dbAlarms = await this._db.insertMultipleDocs(alarms);
     const errors = dbAlarms.filter(info => !info.ok);
     if (errors.length > 0) {

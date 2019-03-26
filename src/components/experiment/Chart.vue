@@ -41,7 +41,7 @@
           v-bind:key="measure.id"
           class="d-flex justify-content-between align-items-center"
         >
-          {{ measure.value.name }} - {{ measure.value.unit }} - {{ measure.value.samples }}
+          {{ measure.value.name + (measure.value.unit ? ' - ' + measure.value.unit : '') }}
           <b-button
             v-if="!tmpMeasures.some(m => m.id === measure.id)"
             @click="() => onClickAdd(measure)"
@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import Chart from '../../services/chart';
+import ChartService from '../../services/chart';
 import { dateToTime, stringToDate, timeToDate } from '../../services/date';
 
 export default {
@@ -111,7 +111,7 @@ export default {
     this.startTime = dateToTime(startDate);
     this.endTime = dateToTime(endDate);
 
-    this.chart = new Chart(this.$refs[this.refName], startDate, endDate, {
+    this.chart = new ChartService(this.$refs[this.refName], startDate, endDate, {
       onScaleChange: (startDate, endDate) => {
         this.startTime = dateToTime(startDate);
         this.endTime = dateToTime(endDate);
@@ -151,9 +151,9 @@ export default {
       this.selectedMeasures = {};
       for (let measure of this.tmpMeasures) {
         if (!former[measure.id]) {
-          this.$db.fetchMeasure(measure.id)
-          .then(measure => {
-            this.chart.addMeasure(measure, measure.samples);
+          this.$db.fetchSamples(measure.id)
+          .then(samples => {
+            this.chart.addMeasure(measure.value, samples.rows.map(row => row.value));
           });
           this.selectedMeasures[measure.id] = measure;
         } else {

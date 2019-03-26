@@ -1,14 +1,28 @@
 version: '3'
 services:
-  couchdb:
+  #couchdb:
+  #  container_name: safran-db
+  #  image: couchdb:latest 
+  #  environment:
+  #    COUCHDB_USER: adm
+  #    COUCHDB_PASSWORD: pass
+  #  ports:
+  #    - "5984:5984"
+  #  volumes:
+  #    - ./data:/opt/couchdb/data
+  influxdb:
     container_name: safran-db
-    image: couchdb:latest 
-    environment:
-      COUCHDB_USER: adm
-      COUCHDB_PASSWORD: pass
+    image: influxdb:latest
     ports:
-      - "5984:5984"
-    volumes:
-      - ./data:/opt/couchdb/data
+      - "8083:8083"
+      - "8086:8086"
+      - "8090:8090"
+  chronograf:
+    container_name: safran-db-ui
+    image: chronograf:latest
+    ports:
+      - "10000:8888"
+    links:
+      - influxdb
 volumes:
   data:

@@ -118,6 +118,15 @@ class Database {
     });
   }
 
+  fetchSamples(id) {
+    return this._db.query('samples/findByMeasure', {
+      key: id
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+    });
+  }
+
   fetchPendings() {
     for (let pending of Object.values(this._pendings)) {
       if (pending) {
