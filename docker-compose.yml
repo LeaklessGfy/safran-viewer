@@ -13,6 +13,9 @@ services:
   influxdb:
     container_name: safran-db
     image: influxdb:latest
+    environment:
+      INFLUXDB_DATA_MAX_VALUES_PER_TAG: 0
+      INFLUXDB_DATA_MAX_VALUES_PER_SERIES: 0
     ports:
       - "8083:8083"
       - "8086:8086"
@@ -24,5 +27,14 @@ services:
       - "10000:8888"
     links:
       - influxdb
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    links:
+      - influxdb
+    volumes:
+      - ./data:/var/lib/grafana
 volumes:
   data:
