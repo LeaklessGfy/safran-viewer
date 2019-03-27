@@ -101,7 +101,7 @@ class ExperimentParser {
     return { samples, isEof, nextIndex: i + index };
   }
 
-  async parseAlarms(experimentId) {
+  async parseAlarms() {
     let isEof = false;
     const alarms = [];
 
@@ -111,14 +111,17 @@ class ExperimentParser {
 
     for (let i = 0; !isEof; i++) {
       const info = await this._readLine(this._alarmsReader, i, 1);
-      this._checkLineEof(info, 1);
-      this._observer.onProgress(info.progress);
+      this._checkLineEof(info, 0);
+      //this._observer.onProgress(info.progress);
 
       const line = info.lines[0];
-      if (!line) continue;
+      if (!line) {
+        isEof = true;
+        break;
+      };
 
       const arr = this._parse(line, 3);
-      const alarm = this._parseAlarm(arr[0], arr[1], arr[2], experimentId);
+      const alarm = this._parseAlarm(arr[0].split(" ")[1], arr[1], arr[2]);
       alarms.push(alarm);
 
       if (info.isEof) {
@@ -136,24 +139,19 @@ class ExperimentParser {
     };
   }
 
-  _parseSample(value, date, measure) {
+  _parseSample(value, time, measure) {
     return {
       value,
-      date,
+      time,
       measure
     };
   }
 
-  _parseAlarm(date, level, message, experiment) {
+  _parseAlarm(time, level, message) {
     return {
-      //reference: null,
-      //name: null,
-      //state: null,
-      //order: null,
-      date, // LOCAL DATE TIME
+      time,
       level: parseInt(level, 10),
-      message,
-      experiment
+      message
     };
   }
 

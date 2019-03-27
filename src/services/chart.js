@@ -4,30 +4,15 @@ import am4themes_animated from '@amcharts/amcharts4/themes/animated';
 
 am4core.useTheme(am4themes_animated);
 
-const AlarmTooltip = `<center><strong>{name}</strong></center>
-<hr />
-<table>
-<tr>
-  <th align="left">Level</th>
-  <td>{valueY}</td>
-</tr>
-<tr>
-  <th align="left">State</th>
-  <td>{state}</td>
-</tr>
-<tr>
-  <th align="left">Message</th>
-  <td>{message}</td>
-</tr>
-<tr>
-  <th align="left">Order</th>
-  <td>{order}</td>
-</tr>
-</table>
-<hr />`;
+const TimeTooltip = `<center><strong>{legend}</strong></center>`;
 
-const MeasureTooltip = `<center><strong>{name}</strong></br>
-<b align="center">{valueY}&nbsp;{unit}</b></center>`;
+const AlarmTooltip = `<center><strong>{name}</strong></center>
+<table>
+<tr><th align="left">Level</th><td>{valueY}</td></tr>
+<tr><th align="left">Message</th><td>{message}</td></tr>
+</table>`;
+
+const MeasureTooltip = `<center><strong>{name}</strong><br><b>{valueY}&nbsp;{unit}</b></center>`;
 
 export default class ChartService {
   _date;
@@ -63,7 +48,18 @@ export default class ChartService {
 
     this._chart.legend = new am4charts.Legend();
     this._chart.cursor = new am4charts.XYCursor();
-    
+    this._chart.cursor.behavior = 'selectX';
+    this._chart.cursor.maxPanOut = 0;
+    const proxy = new Proxy(this._chart.cursor.selection, {
+      get: function(obj, prop) {
+        if (prop === 'hide') {
+          return () => {};
+        }
+        return obj[prop];
+      }
+    });
+    this._chart.cursor.selection = proxy;
+
     this._dateAxis = this._chart.xAxes.push(new am4charts.DateAxis());
     this._dateAxis.baseInterval = { count: 1, timeUnit: 'second' };
     this._dateAxis.min = startDate;
@@ -83,9 +79,10 @@ export default class ChartService {
     series.dataFields.dateX = 'time';
     series.strokeWidth = 1;
     series.yAxis = valueAxis;
+    series.tooltipHTML = TimeTooltip;
     series.data = [
-      { value: 1, time: startDate },
-      { value: 1, time: endDate }
+      { value: 1, time: startDate, legend: 'Start' },
+      { value: 1, time: endDate, legend: 'End' }
     ];
   }
 
@@ -195,6 +192,10 @@ export default class ChartService {
       );
     });
 
+    const bullet = series.bullets.push(new am4charts.CircleBullet());
+    const bullethover = bullet.states.create('hover');
+    bullethover.properties.scale = 1.3;
+
     this._measuresSeries[measure._id] = series;
   }
 
@@ -232,6 +233,20 @@ export default class ChartService {
     setTimeout(() => this._isZooming = false, 500);
   }
 
+  changeMode(mode) {
+    switch (mode) {
+      case 'zoom':
+        this._chart.cursor.behavior = 'zoomX';
+        break;
+      case 'select':
+        this._chart.cursor.behavior = 'selectX';
+        break;
+      case 'move':
+        this._chart.cursor.behavior = 'panX';
+        break;
+    }
+  }
+
   destroy() {
     if (this._chart) {
       this._chart.dispose();
@@ -253,13 +268,10 @@ export default class ChartService {
 
   _normalizeAlarms(alarms) {
     return alarms.map(alarm => {
-      const time = new Date(this._date);
-      time.setMilliseconds(alarm.time);
-
       return {
         value: alarm.level,
-        ...alarm,
-        time
+        message: alarm.message,
+        time: alarm.time
       };
     });
   }

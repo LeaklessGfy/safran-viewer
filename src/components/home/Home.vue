@@ -22,7 +22,7 @@
 
     <b-pagination
       v-model="currentPage"
-      :total-rows="experiments.total_rows"
+      :total-rows="experiments.max"
       :per-page="limit"
       @change="onPageChange"
       size="md"

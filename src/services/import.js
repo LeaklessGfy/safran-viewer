@@ -5,12 +5,12 @@ const SAMPLE_STACK_INSERT = 500;
 
 export default class ImportService {
   _db;
-  _experiment;
   _worker;
-  _subject;
-  _idHolder;
 
+  _experiment;
+  _subject;
   _parser;
+  _idHolder;
 
   constructor(db) {
     this._db = db;
@@ -56,11 +56,17 @@ export default class ImportService {
 
   async importMeasures() {
     const measures = await this._parser.parseMeasures();
-    const measuresId = await this._db.insertMeasures(this._idHolder.experiment, measures);
-    if (!measuresId) {
-      return this._subject.error(new Error('Error in insert measures'));
+    try {
+      const measuresId = await this._db.insertMeasures(this._idHolder.experiment, measures);
+      if (!measuresId) {
+        this._db.removeExperiment(this._idHolder.experiment);
+        return this._subject.error(new Error('Error in insert measures'));
+      }
+      this._idHolder.measures = measuresId;
+    } catch (err) {
+      this._db.removeExperiment(this._idHolder.experiment);
+      throw err;
     }
-    this._idHolder.measures = measuresId;
   }
 
   async importSamples() {
@@ -72,19 +78,14 @@ export default class ImportService {
         isEof = true;
       }
       index = samplesSub.nextIndex;
-      this._db.insertSamples(samplesSub.samples, this._experiment.beginTime);
+      this._db.insertSamples(this._idHolder.experiment, samplesSub.samples, this._experiment.beginTime);
     }
   }
 
   async importAlarms() {
-    const alarms = await this._parser.parseAlarms(this._idHolder.experiment);
-    if (alarms.length < 1) {
-      return;
-    }
-    const dbAlarms = await this._db.insertMultipleDocs(alarms);
-    const errors = dbAlarms.filter(info => !info.ok);
-    if (errors.length > 0) {
-      return this._subject.error(errors);
+    const alarms = await this._parser.parseAlarms();
+    if (alarms.length > 0) {
+      await this._db.insertAlarms(this._idHolder.experiment, alarms, this._experiment.beginTime);      
     }
   }
 }

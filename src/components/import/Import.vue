@@ -127,14 +127,14 @@ const defaultState = {
 };
 
 export default {
-  data: () => (defaultState),
+  data: () => Object.assign({}, defaultState),
   subscriptions() {
     return {
       benchs: this.$db.fetchBenchs().pipe(
-        map(benchs => benchs.map(b => ({ text: b.name, value: b })))
+        map(benchs => benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })))
       ),
       campaigns: this.$db.fetchCampaigns().pipe(
-        map(campaigns => campaigns.map(c => ({ text: c.id12c, value: c})))
+        map(campaigns => campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })))
       )
     };
   },
@@ -170,8 +170,11 @@ export default {
       );
       service.import();
     },
-    onReset() {
-      Object.assing(this.$data, defaultState);
+    onReset(e) {
+      e.preventDefault();
+      for (let key of Object.keys(defaultState)) {
+        this.$data[key] = defaultState[key];
+      }
     }
   }
 };

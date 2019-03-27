@@ -32,7 +32,6 @@ export default {
   },
   methods: {
     onClickDB() {
-      this.$db.changeDb();
     }
   },
   components: {

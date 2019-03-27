@@ -2,19 +2,20 @@ import { parse, format, getTime } from 'date-fns';
 
 export const dateToTimestamp = date => getTime(date);
 
-export const timeToTimestamp = (time, date) => {
-  if (!(date instanceof Date)) {
-    date = stringToDate(date);
-  }
-  const build = timeToDate(time, date);
-  return dateToTimestamp(build);
-};
-
 export const stringToDate = str => parse(str);
 
 export const dateToTime = date => format(date, 'HH:mm:ss:SSSS');
 
+export const timeToTimestamp = (time, date) => {
+  const build = timeToDate(time, date);
+  return dateToTimestamp(build);
+};
+
 export const timeToDate = (time, date) => {
+  if (!(date instanceof Date)) {
+    date = stringToDate(date);
+  }
+
   const timeSplit = time.split(':');
   let hours = date.getHours(),
     mins = date.getMinutes(),

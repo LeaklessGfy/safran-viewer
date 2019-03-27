@@ -4,13 +4,13 @@ import uuidv4 from 'uuid/v4';
 import Schema from './schema';
 import { dateToTimestamp, timeToTimestamp } from '../../services/date';
 
-const REMOTE_HOST = 'localhost:8086';
 const DATABASE_NAME = 'safran_db';
-
-const LIMIT = 5;
 
 class Database {
   _db;
+  _host;
+  _port;
+  _limit;
 
   /* SUBJECTS */
   _errorsSubject;
@@ -21,11 +21,9 @@ class Database {
   _measuresSubject;
 
   constructor() {
-    this._db = new Influx.InfluxDB({
-      host: REMOTE_HOST,
-      database: DATABASE_NAME,
-      schema: Schema
-    });
+    this._host = 'localhost';
+    this._port = 8086;
+    this._limit = 5;
 
     this._errorsSubject = new Subject();
     this._experimentSubject = new BehaviorSubject({});
@@ -34,7 +32,28 @@ class Database {
     this._campaignsSubject = new BehaviorSubject([]);
     this._measuresSubject = new BehaviorSubject([]);
 
+    this.openDatabase();
     this.install();
+  }
+
+  getHost() {
+    return this._host + ':' + this._port;
+  }
+
+  setHost(host) {
+    const split = host.split(':');
+    this._host = split[0];
+    this._port = split.length > 1 ? split[1] : this._port;
+    
+    return this.openDatabase();
+  }
+
+  getLimit() {
+    return this._limit;
+  }
+
+  setLimit(limit) {
+    this._limit = limit;
   }
 
   getErrors() {
@@ -61,14 +80,6 @@ class Database {
     return this._measuresSubject;
   }
 
-  countExperiments() {
-    return this._db.query('SELECT count(*) FROM experiments');
-  }
-
-  countMeasures(id) {
-    return this._db.query(`SELECT count(*) FROM measures WHERE "experimentId"=${Influx.escape.stringLit(id)}`);
-  }
-
   fetchExperiment(id) {
     this._db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
     .then(result => {
@@ -85,10 +96,19 @@ class Database {
   }
 
   fetchExperiments(page = 1) {
-    this._db.query(`SELECT * FROM experiments LIMIT ${LIMIT} OFFSET ${(page - 1) * LIMIT};`)
+    Promise.all([
+      this._db.query(`SELECT * FROM experiments LIMIT ${this._limit} OFFSET ${(page - 1) * this._limit};`),
+      this._db.query('SELECT count("name") FROM experiments;')
+    ])
+    .then(values => {
+      const result = values[0];
+      result.max = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      return result;
+    })
     .then(result => {
       this._experimentsSubject.next(result);
-    }).catch(err => {
+    })
+    .catch(err => {
       this._errorsSubject.next(err);
       this._experimentsSubject.next([]);
     });
@@ -120,12 +140,20 @@ class Database {
   }
 
   fetchMeasures(experimentId, page = 1) {
-    this._db.query(
-      `SELECT * FROM measures
-      WHERE "experimentId"=${Influx.escape.stringLit(experimentId)}
-      LIMIT ${LIMIT}
-      OFFSET ${(page - 1) * LIMIT};`
-    )
+    Promise.all([
+      this._db.query(
+        `SELECT * FROM measures
+        WHERE "experimentId"=${Influx.escape.stringLit(experimentId)}
+        LIMIT ${this._limit}
+        OFFSET ${(page - 1) * this._limit};`
+      ),
+      this._db.query(`SELECT count("name") FROM measures WHERE "experimentId"=${Influx.escape.stringLit(experimentId)};`)
+    ])
+    .then(values => {
+      const result = values[0];
+      result.max = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      return result;
+    })
     .then(result => {
       this._measuresSubject.next(result);
     })
@@ -138,11 +166,23 @@ class Database {
 
   fetchSamples(measureId) {
     return this._db.query(
-      `SELECT * FROM samples
-      WHERE "measureId"=${Influx.escape.stringLit(measureId)};`
-    , { precision: Influx.Precision.Milliseconds })
+      `SELECT * FROM samples WHERE "measureId"=${Influx.escape.stringLit(measureId)};`,
+      { precision: Influx.Precision.Milliseconds }
+    )
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
+    });
+  }
+
+  fetchAlarms(experimentId) {
+    return this._db.query(
+      `SELECT * FROM alarms WHERE "experimentId"=${Influx.escape.stringLit(experimentId)};`,
+      { precision: Influx.Precision.Milliseconds }
+    )
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
     });
   }
 
@@ -167,6 +207,7 @@ class Database {
     })
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
     });
   }
 
@@ -187,32 +228,55 @@ class Database {
     })
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
     });
   }
 
-  insertSamples(samples, date = new Date()) {
+  insertSamples(experimentId, samples, date = new Date()) {
     const points = samples.map(sample => ({
       measurement: 'samples',
-      tags: { id: uuidv4(), measureId: sample.measure },
+      tags: { experimentId, measureId: sample.measure },
       fields: {
         value: sample.value,
       },
-      timestamp: timeToTimestamp(sample.date, date)
+      timestamp: timeToTimestamp(sample.time, date)
     }));
 
     return this._db.writePoints(points, { precision: Influx.Precision.Milliseconds })
-    .then(() => {
-      return points.map(point => point.fields);
-    })
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
+    });
+  }
+
+  insertAlarms(experimentId, alarms, date = new Date()) {
+    const points = alarms.map(alarm => ({
+      measurement: 'alarms',
+      tags: { experimentId },
+      fields: {
+        level: alarm.level,
+        message: alarm.message
+      },
+      timestamp: timeToTimestamp(alarm.time, date)
+    }));
+
+    return this._db.writePoints(points, { precision: Influx.Precision.Milliseconds })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
     });
   }
 
   removeExperiment(id) {
-    return this._db.query(`DELETE from experiments WHERE "id"=${Influx.escape.stringLit(id)};`)
+    return Promise.all([
+      this._db.query(`DELETE FROM experiments WHERE "id"=${Influx.escape.stringLit(id)};`),
+      this._db.query(`DELETE FROM measures WHERE "experimentId"=${Influx.escape.stringLit(id)};`),
+      this._db.query(`DELETE FROM samples WHERE "experimentId"=${Influx.escape.stringLit(id)};`),
+      this._db.query(`DELETE FROM alarms WHERE "experimentId"=${Influx.escape.stringLit(id)};`)
+    ])
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
     });
   }
 
@@ -222,6 +286,27 @@ class Database {
       remote: [],
       length: 0
     }
+  }
+
+  openDatabase() {
+    this._db = new Influx.InfluxDB({
+      host: this._host,
+      port: this._port,
+      database: DATABASE_NAME,
+      schema: Schema
+    });
+
+    return this._db.ping(5000)
+    .then(hosts => {
+      const hasSucceed = hosts.every(host => host.online);
+      if (!hasSucceed) {
+        throw new Error('Host not online : ' + this._host + ':' + this._port);
+      }
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
   }
 
   install() {
@@ -242,33 +327,16 @@ class Database {
       this._errorsSubject.next(err);
     });
   }
-
-  getCurrent() {
-    return 'remote';
-  }
-
-  getLimit() {
-    return LIMIT;
-  }
 }
 
+const DB = new Database();
 let _Vue;
 
 export default Vue => {
   if (_Vue === Vue) return;
   _Vue = Vue;
 
-  Vue.mixin({
-    beforeCreate () {
-      if (this.$options.router) {
-        this._db = new Database();
-      } else if (this.$options.parent && this.$options.parent._db) {
-        this._db = this.$options.parent._db;
-      }
-    }
-  });
-
   Object.defineProperty(Vue.prototype, '$db', {
-    get () { return this._db; }
+    get () { return DB; }
   });
 };
