@@ -1,6 +1,8 @@
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
+import { addMilliseconds } from 'date-fns';
+import { dateToTime } from './date';
 
 am4core.useTheme(am4themes_animated);
 
@@ -18,23 +20,25 @@ export default class ChartService {
   _date;
   _observer;
   _isZooming = false;
+  _position = null;
 
   _chart;
   _dateAxis;
   _alarmsSeries;
   _measuresSeries = {};
   _timelineSeries;
+  _timeSeries;
 
   constructor(ref, startDate, endDate, observer) {
-    this._initChart(ref, startDate, endDate);
-    this._initTime(startDate, endDate);
-    this._initTimeline(startDate);
+    this._initChart(ref);
+    this._initTime();
+    this._initTimeline();
     this._initEvents();
-    this._date = startDate;
     this._observer = observer;
+    this.rescale(startDate, endDate);
   }
 
-  _initChart(ref, startDate, endDate) {
+  _initChart(ref) {
     this._chart = am4core.create(ref, am4charts.XYChart);
     this._chart.colors.list = [
         am4core.color('#357AB7'),
@@ -48,80 +52,96 @@ export default class ChartService {
 
     this._chart.legend = new am4charts.Legend();
     this._chart.cursor = new am4charts.XYCursor();
-    this._chart.cursor.behavior = 'selectX';
     this._chart.cursor.maxPanOut = 0;
-    const proxy = new Proxy(this._chart.cursor.selection, {
-      get: function(obj, prop) {
-        if (prop === 'hide') {
-          return () => {};
-        }
-        return obj[prop];
-      }
-    });
-    this._chart.cursor.selection = proxy;
 
     this._dateAxis = this._chart.xAxes.push(new am4charts.DateAxis());
     this._dateAxis.baseInterval = { count: 1, timeUnit: 'second' };
-    this._dateAxis.min = startDate;
-    this._dateAxis.max = endDate;
-    //dateAxis.renderer.minGridDistance = 70;
   }
 
-  _initTime(startDate, endDate) {
+  _initTime() {
     const valueAxis = this._chart.yAxes.push(new am4charts.ValueAxis());
     valueAxis.min = 0;
     valueAxis.max = 1;
     valueAxis.visible = false;
 
-    const series = this._chart.series.push(new am4charts.ColumnSeries());
-    series.name = 'Start & End';
-    series.dataFields.valueY = 'value';
-    series.dataFields.dateX = 'time';
-    series.strokeWidth = 1;
-    series.yAxis = valueAxis;
-    series.tooltipHTML = TimeTooltip;
-    series.data = [
-      { value: 1, time: startDate, legend: 'Start' },
-      { value: 1, time: endDate, legend: 'End' }
-    ];
+    this._timeSeries = this._chart.series.push(new am4charts.ColumnSeries());
+    this._timeSeries.name = 'Start & End';
+    this._timeSeries.dataFields.valueY = 'value';
+    this._timeSeries.dataFields.dateX = 'time';
+    this._timeSeries.strokeWidth = 1;
+    this._timeSeries.yAxis = valueAxis;
+    this._timeSeries.tooltipHTML = TimeTooltip;
   }
 
-  _initTimeline(startDate) {
+  _initTimeline() {
     const valueAxis = this._chart.yAxes.push(new am4charts.ValueAxis());
 
     this._timelineSeries = this._chart.series.push(new am4charts.ColumnSeries());
     this._timelineSeries.dataFields.valueY = 'timeline';
     this._timelineSeries.dataFields.dateX = 'time';
-    this._timelineSeries.strokeWidth = 2;
+    //this._timelineSeries.strokeWidth = 2;
     this._timelineSeries.yAxis = valueAxis;
     this._timelineSeries.name = 'Timeline';
     this._timelineSeries.tooltipText = '{name}';
-    this._timelineSeries.interpolationDuration = 500;
+    //this._timelineSeries.interpolationDuration = 500;
     this._timelineSeries.defaultState.transitionDuration = 0;
-    this._timelineSeries.columns.template.width = am4core.percent(4);
-    this._timelineSeries.data = [{
-        time: startDate,
-        timeline: 10
-    }];
-    this._timelineSeries.disabled = true;
+    //this._timelineSeries.columns.template.width = am4core.percent(4);
     this._timelineSeries.fill = am4core.color('#59E82A');
     this._timelineSeries.stroke = am4core.color('#59E82A');
 
     valueAxis.visible = false;
     valueAxis.renderer.grid.template.disabled = true;
     valueAxis.renderer.opposite = true;
-    valueAxis.interpolationDuration = 500;
-    valueAxis.rangeChangeDuration = 500;
+    //valueAxis.interpolationDuration = 500;
+    //valueAxis.rangeChangeDuration = 500;
     valueAxis.min = 0;
     valueAxis.max = 5;
   }
 
   _initEvents() {
     this._chart.series.events.on('removed', () => {
-      //this._timelineSeries.disabled = true;
       this._chart.invalidateData();
     });
     this._dateAxis.events.on('selectionextremeschanged', this._onScaleChange.bind(this));
+    this._chart.legend.itemContainers.template.events.on('doublehit', ev => {
+      this.scaleOnSeries(ev.target.dataItem.dataContext);
+    });
+    this._chart.cursor.events.on('cursorpositionchanged', ev => {
+      const axisPos = this._dateAxis.toAxisPosition(ev.target.xPosition);
+      this._position = this._dateAxis.positionToDate(axisPos);
+    });
+    this._chart.events.on('doublehit', () => {
+      if (!this._observer) {
+        return;
+      }
+      this._observer.onDateClick(this._position);
+      this._timelineSeries.data[0].time = this._position;
+      this._timelineSeries.invalidateData();
+    });
+    this._chart.events.on('track', ev => {
+      if (!this._dateAxis.axisRanges) { // Check if this._position in range
+        this._chart.cursor.tooltipText = dateToTime(this._position);
+        this._chart.cursor.tooltipPosition = 'pointer';
+        this._chart.cursor.showTooltip(ev.point);
+      }
+    });
+    this._chart.cursor.events.on('selectstarted', () => {
+      this._selectStart = new Date(this._position);
+    });
+    this._chart.cursor.events.on('selectended', () => {
+      //var range = dateAxis.createSeriesRange(series); ON SERIES
+      this._dateAxis.axisRanges.clear();
+
+      const range = this._dateAxis.axisRanges.create();
+      range.date = this._selectStart;
+      range.endDate = new Date(this._position);
+      range.axisFill.stroke = am4core.color('#396478');
+      range.axisFill.fill = am4core.color('#396478');
+      range.axisFill.fillOpacity = 0.3;
+      range.axisFill.tooltipText = `Range:\n[bold]${dateToTime(this._selectStart)}[/] to [bold]${dateToTime(this._position)}[/]`;
+      range.axisFill.interactionsEnabled = true;
+      range.axisFill.isMeasured = true;
+    });
     //this._chart.scrollbarX.events.on('up', this._onScaleChange.bind(this));
     //this._chart.events.on('globalscalechanged', this._onScaleChange.bind(this));
   }
@@ -216,10 +236,11 @@ export default class ChartService {
     if (!series) {
       return;
     }
-    this._dateAxis.zoomToDates(
-      series.data[0].time,
-      series.data[series.data.length - 1].time
-    );
+    this.scaleOnSeries(series);
+  }
+
+  scaleOnSeries(series) {
+    this.zoom(series.data[0].time, series.data[series.data.length - 1].time);
   }
 
   zoom(startDate, endDate) {
@@ -245,6 +266,48 @@ export default class ChartService {
         this._chart.cursor.behavior = 'panX';
         break;
     }
+  }
+
+  rescale(startDate, endDate) {
+    this._date = startDate;
+    this._dateAxis.min = startDate;
+    this._dateAxis.max = endDate;
+    this._timeSeries.data = [
+      { value: 1, time: startDate, legend: 'Start' },
+      { value: 1, time: endDate, legend: 'End' }
+    ];
+    this._timelineSeries.data = [{
+      time: startDate,
+      timeline: 10
+    }];
+    this._chart.invalidateData();
+  }
+
+  startTimeline(currentDate) {
+    this._timelineSeries.data[0].time = currentDate;
+    this._chart.scrollbarX.interactionsEnabled = false;
+    this._chart.interactionsEnabled = false;
+    this._timelineSeries.disabled = false;
+  }
+
+  tickTimeline(speed) {
+    const oldTime = this._timelineSeries.data[0].time;
+    const newTime = addMilliseconds(oldTime, speed);
+    this._timelineSeries.data[0].time = newTime;
+    this._timelineSeries.invalidateData();
+
+    return newTime;
+  }
+
+  pauseTimeline() {
+    this._chart.scrollbarX.interactionsEnabled = true;
+    this._chart.interactionsEnabled = true;
+  }
+
+  stopTimeline() {
+    this.pauseTimeline();
+    this._timelineSeries.data[0].time = this._date;
+    this._timelineSeries.invalidateData();
   }
 
   destroy() {

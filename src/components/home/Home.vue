@@ -21,9 +21,9 @@
     </b-list-group>
 
     <b-pagination
-      v-model="currentPage"
-      :total-rows="experiments.max"
-      :per-page="limit"
+      v-model="experiments.current"
+      :total-rows="experiments.total"
+      :per-page="experiments.limit"
       @change="onPageChange"
       size="md"
       class="mt-3"
@@ -49,8 +49,6 @@
 export default {
   data() {
     return {
-      currentPage: 1,
-      limit: this.$db.getLimit(),
       show: false,
       experiment: null
     }
@@ -75,7 +73,7 @@ export default {
       if (this.experiment) {
         await this.$db.removeExperiment(this.experiment.id);
       }
-      this.$db.fetchExperiments(this.currentPage);
+      this.$db.fetchExperiments(this.experiments.current);
       this.show = false;
     }
   }

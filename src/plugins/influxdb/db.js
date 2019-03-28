@@ -14,6 +14,7 @@ class Database {
 
   /* SUBJECTS */
   _errorsSubject;
+  _loadingSubject;
   _experimentSubject;
   _experimentsSubject;
   _benchsSubject;
@@ -26,6 +27,7 @@ class Database {
     this._limit = 5;
 
     this._errorsSubject = new Subject();
+    this._loadingSubject = new BehaviorSubject(false);
     this._experimentSubject = new BehaviorSubject({});
     this._experimentsSubject = new BehaviorSubject([]);
     this._benchsSubject = new BehaviorSubject([]);
@@ -60,6 +62,10 @@ class Database {
     return this._errorsSubject;
   }
 
+  getLoading() {
+    return this._loadingSubject;
+  }
+
   getExperiment() {
     return this._experimentSubject;
   }
@@ -81,6 +87,7 @@ class Database {
   }
 
   fetchExperiment(id) {
+    this._loadingSubject.next(true);
     this._db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
     .then(result => {
       if (result.length < 1) {
@@ -91,18 +98,24 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       this._experimentSubject.next({});
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._experimentSubject;
   }
 
   fetchExperiments(page = 1) {
+    this._loadingSubject.next(true);
     Promise.all([
       this._db.query(`SELECT * FROM experiments LIMIT ${this._limit} OFFSET ${(page - 1) * this._limit};`),
       this._db.query('SELECT count("name") FROM experiments;')
     ])
     .then(values => {
       const result = values[0];
-      result.max = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.current = page;
+      result.limit = this._limit;
       return result;
     })
     .then(result => {
@@ -111,11 +124,15 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       this._experimentsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._experimentsSubject;
   }
 
   fetchBenchs() {
+    this._loadingSubject.next(true);
     this._db.query('SELECT DISTINCT(bench) FROM experiments;')
     .then(result => {
       this._benchsSubject.next(result.map(r => JSON.parse(r.distinct)));
@@ -123,11 +140,15 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       this._benchsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._benchsSubject;
   }
 
   fetchCampaigns() {
+    this._loadingSubject.next(true);
     this._db.query('SELECT DISTINCT(campaign) FROM experiments;')
     .then(result => {
       this._campaignsSubject.next(result.map(r => JSON.parse(r.distinct)));
@@ -135,11 +156,15 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       this._campaignsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._campaignsSubject;
   }
 
   fetchMeasures(experimentId, page = 1) {
+    this._loadingSubject.next(true);
     Promise.all([
       this._db.query(
         `SELECT * FROM measures
@@ -151,7 +176,9 @@ class Database {
     ])
     .then(values => {
       const result = values[0];
-      result.max = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.current = page;
+      result.limit = this._limit;
       return result;
     })
     .then(result => {
@@ -160,11 +187,15 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       this._measuresSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._measuresSubject;
   }
 
   fetchSamples(measureId) {
+    this._loadingSubject.next(true);
     return this._db.query(
       `SELECT * FROM samples WHERE "measureId"=${Influx.escape.stringLit(measureId)};`,
       { precision: Influx.Precision.Milliseconds }
@@ -172,10 +203,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   fetchAlarms(experimentId) {
+    this._loadingSubject.next(true);
     return this._db.query(
       `SELECT * FROM alarms WHERE "experimentId"=${Influx.escape.stringLit(experimentId)};`,
       { precision: Influx.Precision.Milliseconds }
@@ -183,10 +218,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   insertExperiment(experiment) {
+    this._loadingSubject.next(true);
     const points = [{
       measurement: 'experiments',
       tags: { id: uuidv4() },
@@ -208,10 +247,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   insertMeasures(experimentId, measures) {
+    this._loadingSubject.next(true);
     const points = measures.map(measure => ({
       measurement: 'measures',
       tags: { id: uuidv4(), experimentId },
@@ -229,10 +272,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   insertSamples(experimentId, samples, date = new Date()) {
+    this._loadingSubject.next(true);
     const points = samples.map(sample => ({
       measurement: 'samples',
       tags: { experimentId, measureId: sample.measure },
@@ -246,10 +293,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   insertAlarms(experimentId, alarms, date = new Date()) {
+    this._loadingSubject.next(true);
     const points = alarms.map(alarm => ({
       measurement: 'alarms',
       tags: { experimentId },
@@ -264,10 +315,14 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   removeExperiment(id) {
+    this._loadingSubject.next(true);
     return Promise.all([
       this._db.query(`DELETE FROM experiments WHERE "id"=${Influx.escape.stringLit(id)};`),
       this._db.query(`DELETE FROM measures WHERE "experimentId"=${Influx.escape.stringLit(id)};`),
@@ -277,6 +332,9 @@ class Database {
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
@@ -289,6 +347,7 @@ class Database {
   }
 
   openDatabase() {
+    this._loadingSubject.next(true);
     this._db = new Influx.InfluxDB({
       host: this._host,
       port: this._port,
@@ -307,9 +366,13 @@ class Database {
       this._errorsSubject.next(err);
       throw err;
     })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
   }
 
   install() {
+    this._loadingSubject.next(true);
     return this._db.getDatabaseNames()
     .then(names => {
       if (!names.includes(DATABASE_NAME)) {
@@ -318,13 +381,20 @@ class Database {
     })
     .catch(err => {
       this._errorsSubject.next(err);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   drop() {
+    this._loadingSubject.next(true);
     return this._db.dropDatabase(DATABASE_NAME)
     .catch(err => {
       this._errorsSubject.next(err);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 }
