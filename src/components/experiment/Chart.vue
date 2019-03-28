@@ -77,6 +77,15 @@
     
     <div class="chart" :ref="refName"/>
 
+    <b-tabs content-class="mt-3">
+      <b-tab title="Lecture" active>
+        <b-table striped hover :items="timelineValues"></b-table>
+      </b-tab>
+      <b-tab title="Modification">
+
+      </b-tab>
+    </b-tabs>
+
     <b-modal id="measuresModal" title="Mesures" @show="onShowMeasures" @ok="onOkMeasure" size="xl">
       <b-list-group>
         <b-list-group-item
@@ -117,7 +126,7 @@
 
 <script>
 import ChartService from '../../services/chart';
-import { dateToTime, timeToTimestamp } from '../../services/date';
+import { dateToTime, timeToTimestamp, timeToDate } from '../../services/date';
 
 export default {
   data() {
@@ -141,7 +150,8 @@ export default {
       },
       /* MEASURE */
       tmpMeasures: [],
-      selectedMeasures: {}
+      selectedMeasures: {},
+      timelineValues: []
     }
   },
   props: {
@@ -162,6 +172,7 @@ export default {
       },
       onDateClick: date => {
         this.currentTime = dateToTime(date);
+        this.updateTimelineValues(date);
       }
     });
     this.$db.fetchAlarms(this.experiment.id)
@@ -210,16 +221,14 @@ export default {
     onClickRemoveMeasure(measure) {
       this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
     },
-    onOkMeasure() {
+    async onOkMeasure() {
       const former = Object.assign({}, this.selectedMeasures);
       this.selectedMeasures = {};
       for (let measure of this.tmpMeasures) {
         if (!former[measure.id]) {
-          this.$db.fetchSamples(measure.id)
-          .then(samples => {
-            this.chart.addMeasure(measure, samples);
-          });
           this.selectedMeasures[measure.id] = measure;
+          const samples = await this.$db.fetchSamples(measure.id);
+          this.chart.addMeasure(measure, samples);
         } else {
           this.selectedMeasures[measure.id] = former[measure.id];
           delete former[measure.id];
@@ -228,6 +237,7 @@ export default {
       for (let remove of Object.values(former)) {
         this.chart.removeMeasure(remove);
       }
+      this.updateTimelineValues(timeToDate(this.currentTime, this.experiment.beginTime));
     },
     onClickMode(mode) {
       this.mode = mode;
@@ -260,6 +270,7 @@ export default {
       this.interval = setInterval(() => {
         const newDate = this.chart.tickTimeline(speed);
         this.currentTime = dateToTime(newDate);
+        this.updateTimelineValues(newDate);
         if (newDate.getTime() >= this.experiment.endTime) {
           clearInterval(this.interval);
           this.chart.stopTimeline();
@@ -274,6 +285,17 @@ export default {
       clearInterval(this.interval);
       this.chart.stopTimeline();
       this.currentTime = dateToTime(this.experiment.beginTime);
+    },
+    updateTimelineValues(date) {
+      this.timelineValues = Object.values(this.selectedMeasures).map(measure => {
+        const data = this.chart.getMeasureData(measure, date);
+        return {
+          measure: measure.name,
+          type: measure.type,
+          unit: measure.unit,
+          value: data ? data.valueY : '-'
+        };
+      });
     },
     validateDate(date) {
       if (date < this.experiment.beginTime) {

@@ -114,9 +114,9 @@ export default class ChartService {
       if (!this._observer) {
         return;
       }
-      this._observer.onDateClick(this._position);
       this._timelineSeries.data[0].time = this._position;
       this._timelineSeries.invalidateData();
+      this._observer.onDateClick(this._position);
     });
     this._chart.events.on('track', ev => {
       if (!this._dateAxis.axisRanges) { // Check if this._position in range
@@ -216,19 +216,28 @@ export default class ChartService {
     const bullethover = bullet.states.create('hover');
     bullethover.properties.scale = 1.3;
 
-    this._measuresSeries[measure._id] = series;
+    this._measuresSeries[measure.id] = series;
   }
 
   removeMeasure(measure) {
     const series = this._measuresSeries[measure.id];
     if (!series) {
-      return;
+      throw new Error('Series not in chart');
     }
     this._chart.series.removeValue(series);
     this._chart.yAxes.removeValue(series.yAxis);
     series.dispose();
     series.yAxis.dispose();
     delete this._measuresSeries[measure.id];
+  }
+
+  getMeasureData(measure, date) {
+    const series = this._measuresSeries[measure.id];
+    if (!series) {
+      throw new Error('Series not in chart');
+    }
+    const position = this._dateAxis.dateToPosition(date);
+    return this._dateAxis.getSeriesDataItem(series, position, false);
   }
 
   scaleOnMeasure(measure) {
