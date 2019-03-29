@@ -79,10 +79,60 @@
 
     <b-tabs content-class="mt-3">
       <b-tab title="Lecture" active>
-        <b-table striped hover :items="timelineValues"></b-table>
+        <b-table striped hover :items="timelineValues" />
       </b-tab>
-      <b-tab title="Modification">
+      <b-tab title="Modifications" @click="() => onClickMode('select')">
+        <b-form @submit="onModificationSubmit" inline>
+          <b-form-select
+            v-model="modification.measure"
+            class="mr-2"
+            :options="Object.values(selectedMeasures).map(m => m.id)"
+            required
+          />
 
+          <cleave
+            v-model="modification.startTime"
+            :options="options"
+            class="form-control mr-2"
+            placeholder="hh:mm:ss,ssss"
+            :raw="false"
+            required
+          />
+
+          <b-form-select
+            v-model="modification.operation"
+            class="mr-2"
+            :options="['ADD', 'CONSTANT']"
+            required
+          />
+
+          <b-input v-model="modification.value" class="mr-2" type="number" />
+
+          <cleave
+            v-model="modification.endTime"
+            :options="options"
+            class="form-control mr-2"
+            placeholder="hh:mm:ss,ssss"
+            :raw="false"
+            required
+          />
+
+          <b-button type="submit" variant="primary">Add</b-button>
+        </b-form>
+
+        <b-table striped hover :items="modifications" class="mt-2">
+          <template slot="actions" slot-scope="scope">
+            <b-button v-if="!scope.item.isApply" size="sm" variant="primary" @click="() => onToggleModification(scope, true)">
+              Appliquer
+            </b-button>
+            <b-button v-else size="sm" variant="warning" @click="() => onToggleModification(scope, false)">
+              Enlever
+            </b-button>
+            <b-button size="sm" variant="danger" class="ml-2">
+              Supprimer
+            </b-button>
+          </template>
+        </b-table>
       </b-tab>
     </b-tabs>
 
@@ -151,7 +201,20 @@ export default {
       /* MEASURE */
       tmpMeasures: [],
       selectedMeasures: {},
-      timelineValues: []
+      timelineValues: [],
+      /* MODIFICATION */
+      modification: {
+        measure: null,
+        startTime: null,
+        endTime: null,
+        operation: 'ADD',
+        value: 0,
+        isApply: false,
+        actions: null
+      },
+      modifications: [
+        { measure: '', startTime: '', endTime: '', operation: 'ADD', value: 5, isApply: true, actions: null }
+      ]
     }
   },
   props: {
@@ -166,13 +229,17 @@ export default {
   mounted() {
     this.currentTime = dateToTime(this.experiment.beginTime);
     this.chart = new ChartService(this.$refs[this.refName], this.experiment.beginTime, this.experiment.endTime, {
-      onScaleChange: (startDate, endDate) => {
+      onZoom: (startDate, endDate) => {
         this.startTime = dateToTime(startDate);
         this.endTime = dateToTime(endDate);
       },
       onDateClick: date => {
         this.currentTime = dateToTime(date);
         this.updateTimelineValues(date);
+      },
+      onSelect: (startDate, endDate) => {
+        this.modification.startTime = dateToTime(startDate);
+        this.modification.endTime = dateToTime(endDate);
       }
     });
     this.$db.fetchAlarms(this.experiment.id)
@@ -296,6 +363,22 @@ export default {
           value: data ? data.valueY : '-'
         };
       });
+    },
+    onModificationSubmit(e) {
+      e.preventDefault();
+      this.modifications.push({ ...this.modification });
+    },
+    onToggleModification(scope, state) {
+      scope.item.isApply = state;
+      const measure = { id: scope.item.measure };
+      const startDate = timeToDate(scope.item.startTime, this.experiment.beginTime);
+      const endDate = timeToDate(scope.item.endTime, this.experiment.endTime);
+
+      if (state) {
+        this.chart.addRange(measure, startDate, endDate);
+      } else {
+        this.chart.removeRange(measure);
+      }
     },
     validateDate(date) {
       if (date < this.experiment.beginTime) {

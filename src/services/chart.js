@@ -29,6 +29,9 @@ export default class ChartService {
   _timelineSeries;
   _timeSeries;
 
+  _range;
+  _ranges = {};
+
   constructor(ref, startDate, endDate, observer) {
     this._initChart(ref);
     this._initTime();
@@ -83,67 +86,28 @@ export default class ChartService {
     this._timelineSeries.yAxis = valueAxis;
     this._timelineSeries.name = 'Timeline';
     this._timelineSeries.tooltipText = '{name}';
-    //this._timelineSeries.interpolationDuration = 500;
     this._timelineSeries.defaultState.transitionDuration = 0;
-    //this._timelineSeries.columns.template.width = am4core.percent(4);
     this._timelineSeries.fill = am4core.color('#59E82A');
     this._timelineSeries.stroke = am4core.color('#59E82A');
 
     valueAxis.visible = false;
     valueAxis.renderer.grid.template.disabled = true;
     valueAxis.renderer.opposite = true;
-    //valueAxis.interpolationDuration = 500;
-    //valueAxis.rangeChangeDuration = 500;
     valueAxis.min = 0;
     valueAxis.max = 5;
   }
 
   _initEvents() {
+    this._chart.events.on('track', this._onTrack.bind(this));
+    this._chart.events.on('doublehit', this._onClickChart.bind(this));
     this._chart.series.events.on('removed', () => {
       this._chart.invalidateData();
     });
     this._dateAxis.events.on('selectionextremeschanged', this._onScaleChange.bind(this));
-    this._chart.legend.itemContainers.template.events.on('doublehit', ev => {
-      this.scaleOnSeries(ev.target.dataItem.dataContext);
-    });
-    this._chart.cursor.events.on('cursorpositionchanged', ev => {
-      const axisPos = this._dateAxis.toAxisPosition(ev.target.xPosition);
-      this._position = this._dateAxis.positionToDate(axisPos);
-    });
-    this._chart.events.on('doublehit', () => {
-      if (!this._observer) {
-        return;
-      }
-      this._timelineSeries.data[0].time = this._position;
-      this._timelineSeries.invalidateData();
-      this._observer.onDateClick(this._position);
-    });
-    this._chart.events.on('track', ev => {
-      if (!this._dateAxis.axisRanges) { // Check if this._position in range
-        this._chart.cursor.tooltipText = dateToTime(this._position);
-        this._chart.cursor.tooltipPosition = 'pointer';
-        this._chart.cursor.showTooltip(ev.point);
-      }
-    });
-    this._chart.cursor.events.on('selectstarted', () => {
-      this._selectStart = new Date(this._position);
-    });
-    this._chart.cursor.events.on('selectended', () => {
-      //var range = dateAxis.createSeriesRange(series); ON SERIES
-      this._dateAxis.axisRanges.clear();
-
-      const range = this._dateAxis.axisRanges.create();
-      range.date = this._selectStart;
-      range.endDate = new Date(this._position);
-      range.axisFill.stroke = am4core.color('#396478');
-      range.axisFill.fill = am4core.color('#396478');
-      range.axisFill.fillOpacity = 0.3;
-      range.axisFill.tooltipText = `Range:\n[bold]${dateToTime(this._selectStart)}[/] to [bold]${dateToTime(this._position)}[/]`;
-      range.axisFill.interactionsEnabled = true;
-      range.axisFill.isMeasured = true;
-    });
-    //this._chart.scrollbarX.events.on('up', this._onScaleChange.bind(this));
-    //this._chart.events.on('globalscalechanged', this._onScaleChange.bind(this));
+    this._chart.cursor.events.on('cursorpositionchanged', this._onCursorMove.bind(this));
+    this._chart.cursor.events.on('selectstarted', this._onSelectStart.bind(this));
+    this._chart.cursor.events.on('selectended', this._onSelectEnd.bind(this));
+    this._chart.legend.itemContainers.template.events.on('doublehit', this._onClickLegend.bind(this));
   }
 
   addAlarms(alarms) {
@@ -319,6 +283,33 @@ export default class ChartService {
     this._timelineSeries.invalidateData();
   }
 
+  addRange(measure, startDate, endDate, operation, value) {
+    const series = this._measuresSeries[measure.id];
+    if (!series) {
+      throw new Error('Series not found');
+    }
+    const axis = series.yAxis;
+    const range = axis.axisRanges.createSeriesRange(series);
+    range.date = startDate;
+    range.endDate = endDate;
+    range.contents.stroke = am4core.color('#396478');
+    range.contents.fill = am4core.color('#396478');
+    range.contents.fillOpacity = 0.5;
+
+    this._ranges[measure.id] = range;
+    //range.axisFill.tooltipText = `Range:\n[bold]${dateToTime(selectStart)}[/] to [bold]${dateToTime(selectEnd)}[/]`;
+    //range.axisFill.interactionsEnabled = true;
+    //range.axisFill.isMeasured = true;
+  }
+
+  removeRange(measure) {
+    const range = this._ranges[measure.id];
+    if (!range) {
+      throw new Error('Range not found');
+    }
+    this._dateAxis.axisRanges.removeValue(range);
+  }
+
   destroy() {
     if (this._chart) {
       this._chart.dispose();
@@ -358,6 +349,33 @@ export default class ChartService {
     });
   }
 
+  _onCursorMove(ev) {
+    const axisPos = this._dateAxis.toAxisPosition(ev.target.xPosition);
+    this._position = this._dateAxis.positionToDate(axisPos);
+  }
+
+  _onClickChart() {
+    if (!this._observer) {
+      return;
+    }
+    const clickDate = new Date(this._position);
+    this._timelineSeries.data[0].time = clickDate;
+    this._timelineSeries.invalidateData();
+    this._observer.onDateClick(clickDate);
+  }
+
+  _onClickLegend(ev) {
+    this.scaleOnSeries(ev.target.dataItem.dataContext);
+  }
+
+  _onTrack(ev) {
+    if (!this._dateAxis.axisRanges) { // Check if this._position in range
+      this._chart.cursor.tooltipText = dateToTime(this._position);
+      this._chart.cursor.tooltipPosition = 'pointer';
+      this._chart.cursor.showTooltip(ev.point);
+    }
+  }
+
   _onScaleChange() {
     if (!this._observer || this._isZooming) {
       return;
@@ -376,6 +394,33 @@ export default class ChartService {
       return;
     }
 
-    this._observer.onScaleChange(startDate, endDate);
+    this._observer.onZoom(startDate, endDate);
+  }
+
+  _onSelectStart() {
+    this._selectStart = new Date(this._position);
+  }
+
+  _onSelectEnd() {
+    if (this._range) {
+      this._dateAxis.axisRanges.removeValue(this._range);
+    }
+
+    const selectStart = new Date(this._selectStart);
+    const selectEnd = new Date(this._position);
+
+    this._range = this._dateAxis.axisRanges.create();
+    this._range.date = selectStart;
+    this._range.endDate = selectEnd;
+    this._range.axisFill.stroke = am4core.color('#396478');
+    this._range.axisFill.fill = am4core.color('#396478');
+    this._range.axisFill.fillOpacity = 0.3;
+    this._range.axisFill.tooltipText = `Range:\n[bold]${dateToTime(selectStart)}[/] to [bold]${dateToTime(selectEnd)}[/]`;
+    this._range.axisFill.interactionsEnabled = true;
+    this._range.axisFill.isMeasured = true;
+
+    if (this._observer) {
+      this._observer.onSelect(selectStart, selectEnd);
+    }
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="mb-5">
     <b-button v-b-toggle.accordion1 variant="info">Info</b-button>
     <b-collapse id="accordion1">
       <b-card-body class="p-0">
