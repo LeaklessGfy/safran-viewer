@@ -26,13 +26,13 @@
           </template>
 
           <b-dropdown-item @click="() => onClickMode('zoom')">
-            Zoom
+            <v-icon name="search-plus"/> Zoom
           </b-dropdown-item>
           <b-dropdown-item @click="() => onClickMode('select')">
-            Select
+            <v-icon name="object-ungroup"/> Select
           </b-dropdown-item>
           <b-dropdown-item @click="() => onClickMode('move')">
-            Move
+            <v-icon name="hand-paper"/> Move
           </b-dropdown-item>
         </b-dropdown>
 
@@ -77,12 +77,12 @@
     
     <div class="chart" :ref="refName"/>
 
-    <b-tabs content-class="mt-3">
+    <b-tabs content-class="mt-3" v-if="Object.keys(selectedMeasures).length > 0">
       <b-tab title="Lecture" active>
         <b-table striped hover :items="timelineValues" />
       </b-tab>
       <b-tab title="Modifications" @click="() => onClickMode('select')">
-        <b-form @submit="onModificationSubmit" inline>
+        <b-form @submit="onModificationSubmit" inline class="justify-content-center">
           <b-form-select
             v-model="modification.measure"
             class="mr-2"
@@ -117,18 +117,18 @@
             required
           />
 
-          <b-button type="submit" variant="primary">Add</b-button>
+          <b-button type="submit" variant="primary">Ajouter</b-button>
         </b-form>
 
         <b-table striped hover :items="modifications" class="mt-2">
           <template slot="actions" slot-scope="scope">
-            <b-button v-if="!scope.item.isApply" size="sm" variant="primary" @click="() => onToggleModification(scope, true)">
+            <b-button v-if="!scope.item.isApply" size="sm" variant="primary" @click="() => onToggleModification(scope.item, true)">
               Appliquer
             </b-button>
-            <b-button v-else size="sm" variant="warning" @click="() => onToggleModification(scope, false)">
+            <b-button v-else size="sm" variant="warning" @click="() => onToggleModification(scope.item, false)">
               Enlever
             </b-button>
-            <b-button size="sm" variant="danger" class="ml-2">
+            <b-button size="sm" variant="danger" class="ml-2" @click="() => onClickRemoveModification(scope.item)">
               Supprimer
             </b-button>
           </template>
@@ -175,6 +175,7 @@
 </template>
 
 <script>
+import uuid from 'uuid/v4';
 import ChartService from '../../services/chart';
 import { dateToTime, timeToTimestamp, timeToDate } from '../../services/date';
 
@@ -212,9 +213,7 @@ export default {
         isApply: false,
         actions: null
       },
-      modifications: [
-        { measure: '', startTime: '', endTime: '', operation: 'ADD', value: 5, isApply: true, actions: null }
-      ]
+      modifications: []
     }
   },
   props: {
@@ -366,19 +365,29 @@ export default {
     },
     onModificationSubmit(e) {
       e.preventDefault();
-      this.modifications.push({ ...this.modification });
+      this.modifications.push({
+        id: uuid(),
+        ...this.modification
+      });
     },
-    onToggleModification(scope, state) {
-      scope.item.isApply = state;
-      const measure = { id: scope.item.measure };
-      const startDate = timeToDate(scope.item.startTime, this.experiment.beginTime);
-      const endDate = timeToDate(scope.item.endTime, this.experiment.endTime);
+    onToggleModification(modification, state) {
+      modification.isApply = state;
+      const id = modification.id;
+      const measure = { id: modification.measure };
+      const startDate = timeToTimestamp(modification.startTime, this.experiment.beginTime);
+      const endDate = timeToTimestamp(modification.endTime, this.experiment.endTime);
+      const operation = modification.operation;
+      const value = parseInt(modification.value, 10);
 
       if (state) {
-        this.chart.addRange(measure, startDate, endDate);
+        this.chart.addRange(id, measure, startDate, endDate, operation, value);
       } else {
-        this.chart.removeRange(measure);
+        this.chart.removeRange(id);
       }
+    },
+    onClickRemoveModification(modification) {
+      this.chart.removeRange(modification.id);
+      this.modifications = this.modifications.filter(mod => mod !== modification);
     },
     validateDate(date) {
       if (date < this.experiment.beginTime) {

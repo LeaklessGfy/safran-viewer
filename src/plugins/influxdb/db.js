@@ -1,12 +1,11 @@
 import * as Influx from 'influx';
-import { Subject, BehaviorSubject } from 'rxjs';
 import uuidv4 from 'uuid/v4';
 import Schema from './schema';
 import { dateToTimestamp, timeToTimestamp } from '../../services/date';
 
 const DATABASE_NAME = 'safran_db';
 
-class Database {
+export default class Database {
   _db;
   _host;
   _port;
@@ -21,18 +20,21 @@ class Database {
   _campaignsSubject;
   _measuresSubject;
 
-  constructor() {
+  constructor(
+    errors, loading, experiment, experiments,
+    benchs, campaigns, measures
+  ) {
     this._host = 'localhost';
     this._port = 8086;
     this._limit = 5;
 
-    this._errorsSubject = new Subject();
-    this._loadingSubject = new BehaviorSubject(false);
-    this._experimentSubject = new BehaviorSubject({});
-    this._experimentsSubject = new BehaviorSubject([]);
-    this._benchsSubject = new BehaviorSubject([]);
-    this._campaignsSubject = new BehaviorSubject([]);
-    this._measuresSubject = new BehaviorSubject([]);
+    this._errorsSubject = errors;
+    this._loadingSubject = loading;
+    this._experimentSubject = experiment;
+    this._experimentsSubject = experiments
+    this._benchsSubject = benchs;
+    this._campaignsSubject = campaigns;
+    this._measuresSubject = measures;
 
     this.openDatabase();
     this.install();
@@ -56,34 +58,6 @@ class Database {
 
   setLimit(limit) {
     this._limit = limit;
-  }
-
-  getErrors() {
-    return this._errorsSubject;
-  }
-
-  getLoading() {
-    return this._loadingSubject;
-  }
-
-  getExperiment() {
-    return this._experimentSubject;
-  }
-
-  getExperiments() {
-    return this._experimentsSubject;
-  }
-
-  getBenchs() {
-    return this._benchsSubject;
-  }
-
-  getCampaigns() {
-    return this._campaignsSubject;
-  }
-
-  getMeasures() {
-    return this._measuresSubject;
   }
 
   fetchExperiment(id) {
@@ -116,9 +90,6 @@ class Database {
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
       result.limit = this._limit;
-      return result;
-    })
-    .then(result => {
       this._experimentsSubject.next(result);
     })
     .catch(err => {
@@ -179,9 +150,6 @@ class Database {
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
       result.limit = this._limit;
-      return result;
-    })
-    .then(result => {
       this._measuresSubject.next(result);
     })
     .catch(err => {
@@ -343,7 +311,7 @@ class Database {
       local: [],
       remote: [],
       length: 0
-    }
+    };
   }
 
   openDatabase() {
@@ -381,6 +349,7 @@ class Database {
     })
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
@@ -392,21 +361,10 @@ class Database {
     return this._db.dropDatabase(DATABASE_NAME)
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
   }
 }
-
-const DB = new Database();
-let _Vue;
-
-export default Vue => {
-  if (_Vue === Vue) return;
-  _Vue = Vue;
-
-  Object.defineProperty(Vue.prototype, '$db', {
-    get () { return DB; }
-  });
-};

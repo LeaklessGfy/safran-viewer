@@ -1,151 +1,251 @@
 import PouchDB from 'pouchdb';
-import { Subject, BehaviorSubject } from 'rxjs';
-import Experiment from './models/experiment';
-import { BULK_DESIGNS, MAPPER_DESIGNS } from './designs';
+import { BULK_DESIGNS, MAPPER_DESIGNS } from './schema';
 
-const LOCAL_DB_NAME = 'safran';
-const REMOTE_DB_NAME = 'http://localhost:5984/safran';
+const DATABASE_NAME = 'safran_db';
 
-const LOCAL = 'local';
-const REMOTE = 'remote';
-
-const LOCAL_SYNC_KEY = 'safran:local:last_sync';
-const REMOTE_SYNC_KEY = 'safran:remote:last_sync';
-const REMOTE_DB_NAME_KEY = 'safran:remote:db_name';
-const DEFAULT_DB_KEY = 'safran:default:db';
-
-const LIMIT = 6;
-
-class Database {
-  _router;
-  _dbLocal;
-  _dbRemote;
+export default class Database {
   _db;
+  _limit;
+
+  /* SUBJECTS */
   _errorsSubject;
+  _loadingSubject;
   _experimentSubject;
   _experimentsSubject;
   _benchsSubject;
   _campaignsSubject;
-  _dbSubject;
-  _remoteNameSubject;
-  _pendings;
-  Experiment = Experiment;
+  _measuresSubject;
 
-  constructor(router) {
-    this._router = router;
-    this._openDatabases();
-    this._db = this._getDefaultDb();
-    this._errorsSubject = new Subject();
-    this._experimentSubject = new BehaviorSubject({});
-    this._experimentsSubject = new BehaviorSubject([]);
-    this._benchsSubject = new BehaviorSubject([]);
-    this._campaignsSubject = new BehaviorSubject([]);
-    this._measuresSubject = new BehaviorSubject([]);
-    this._dbSubject = new BehaviorSubject(this.getCurrent());
-    this._remoteNameSubject = new BehaviorSubject(this.getRemoteDbName());
-    this._pendings = {
-      experiment: null
-    };
+  constructor(
+    errors, loading, experiment, experiments,
+    benchs, campaigns, measures
+  ) {
+    this._limit = 5;
+
+    this._errorsSubject = errors;
+    this._loadingSubject = loading;
+    this._experimentSubject = experiment;
+    this._experimentsSubject = experiments
+    this._benchsSubject = benchs;
+    this._campaignsSubject = campaigns;
+    this._measuresSubject = measures;
+
+    this.openDatabase();
+    this.install();
   }
 
-  fetchErrors() {
-    return this._errorsSubject;
+  getHost() {
+    return 'local';
+  }
+
+  setHost(host) {
+  }
+
+  getLimit() {
+    return this._limit;
+  }
+
+  setLimit(limit) {
+    this._limit = limit;
   }
 
   fetchExperiment(id) {
-    this._setPending('experiment', this.fetchExperiment.bind(this, id));
+    this._loadingSubject.next(true);
     this._db.get(id)
-    .then(doc => this._experimentSubject.next(doc))
+    .then(result => {
+      this._experimentSubject.next(result);
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       this._experimentSubject.next({});
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._experimentSubject;
   }
 
   fetchExperiments(page = 1) {
+    this._loadingSubject.next(true);
     this._db.query('experiments/findAll', {
       include_docs: true,
-      limit: LIMIT,
-      skip: LIMIT * (page - 1)
+      limit: this._limit,
+      skip: this._limit * (page - 1)
     })
-    .then(docs => this._experimentsSubject.next(docs))
+    .then(values => {
+      const result = values.rows;
+      result.total = values.total_rows;
+      result.current = page;
+      result.limit = this._limit; 
+      this._experimentsSubject.next(result);
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       this._experimentsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._experimentsSubject;
   }
 
   fetchBenchs() {
+    this._loadingSubject.next(true);
     this._db.query('benchs/findAll', { group: true })
-    .then(docs => this._benchsSubject.next(docs))
+    .then(result => {
+      this._benchsSubject.next(result.rows);
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       this._benchsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._benchsSubject;
   }
 
   fetchCampaigns() {
+    this._loadingSubject.next(true);
     this._db.query('campaigns/findAll', { group: true })
-    .then(docs => this._campaignsSubject.next(docs))
+    .then(result => {
+      this._campaignsSubject.next(result.rows);
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       this._campaignsSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._campaignsSubject;
   }
 
-  fetchMeasures(id, page = 1) {
-    this._db.query('measures/findAll', {
-      key: id,
-      limit: LIMIT,
-      skip: LIMIT * (page - 1)
+  fetchMeasures(experimentId, page = 1) {
+    this._loadingSubject.next(true);
+    this._db.query('measures/findByExperiment', {
+      key: experimentId,
+      limit: this._limit,
+      skip: this._limit * (page - 1)
     })
-    .then(docs => this._measuresSubject.next(docs))
+    .then(values => {
+      const result = values.rows;
+      result.total = values.total_rows;
+      result.current = page;
+      result.limit = this._limit;
+      this._measuresSubject.next(result);
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       this._measuresSubject.next([]);
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
     return this._measuresSubject;
   }
 
-  fetchMeasure(id) {
-    return this._db.get(id)
-    .catch(err => {
-      this._errorsSubject.next(err);
-    });
-  }
-
-  fetchSamples(id) {
+  fetchSamples(measureId) {
+    this._loadingSubject.next(true);
     return this._db.query('samples/findByMeasure', {
-      key: id
+      key: measureId
     })
     .catch(err => {
       this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
-  fetchPendings() {
-    for (let pending of Object.values(this._pendings)) {
-      if (pending) {
-        pending();
+  fetchAlarms(experimentId) {
+    this._loadingSubject.next(true);
+    return this._db.query('alarms/findByExperiment', {
+      key: experimentId
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
+  }
+
+  insertExperiment(experiment) {
+
+  }
+
+  insertMeasures(experimentId, measures) {
+
+  }
+
+  insertSamples(experimentId, samples, date = new Date()){
+
+  }
+
+  insertAlarms(experimentId, alarms, date = new Date()) {
+
+  }
+
+  removeExperiment(id) {
+
+  }
+
+  async changes() {
+    return {
+      local: [],
+      remote: [],
+      length: 0
+    };
+  }
+
+  openDatabase() {
+    this._loadingSubject.next(true);
+    this._db = new PouchDB(DATABASE_NAME, {
+      auto_compaction: true
+    });
+    
+    return new Promise(r => r());
+  }
+
+  install() {
+    this._loadingSubject.next(true);
+
+    return this._db.bulkGet({ docs: BULK_DESIGNS })
+    .then(results => {
+      for (let result of results.results) {
+        for (let doc of result.docs) {
+          if (doc.ok && doc.ok.views && Object.keys(doc.ok.views).length > 0) {
+            this._db.remove(doc.ok._id, doc.ok._rev);
+          }
+        }
+        this._db.put(MAPPER_DESIGNS[result.id]);
       }
-    }
+    })
+    .catch (err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
   }
 
-  fetchCurrentDb() {
-    this._dbSubject.next(this.getCurrent());
-    return this._dbSubject;
+  drop() {
+    this._loadingSubject.next(true);
+    return this._db.destroy()
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
   }
 
-  fetchRemoteDbName() {
-    this._remoteNameSubject.next(this.getRemoteDbName());
-    return this._remoteNameSubject;
-  }
-
-  async insertDoc(doc) {
+  async _insertDoc(doc) {
     try {
       return await this._db.post(doc);
     } catch (err) {
@@ -154,7 +254,7 @@ class Database {
     }
   }
 
-  async insertMultipleDocs(docs) {
+  async _insertMultipleDocs(docs) {
     try {
       return await this._db.bulkDocs(docs);
     } catch (err) {
@@ -162,237 +262,4 @@ class Database {
       return null;
     }
   }
-
-  async editExperiment(_rev, experiment) {
-    try {
-      await this._db.put({
-        _rev,
-        ...experiment
-      });
-      return true;
-    } catch (err) {
-      this._errorsSubject.next(err);
-      return false;
-    }
-  }
-
-  async deleteExperiment(doc) {
-    await this._db.remove(doc);
-  }
-
-  async changes() {
-    try {
-      const local = await this._dbLocal.changes({
-        since: parseInt(this._getLastSync(LOCAL), 10),
-        limit: LIMIT,
-        include_docs: true
-      });
-      const remote = await this._dbRemote.changes({
-        since: this._getLastSync(REMOTE),
-        limit: LIMIT,
-        include_docs: true
-      });
-
-      return {
-        local,
-        remote,
-        length: local.results.length + remote.results.length
-      };
-    } catch (err) {
-      this._errorsSubject.next(err);
-      return {
-        local: [],
-        remote: [],
-        length: 0
-      }
-    }
-  }
-
-  async sync(changes) {
-    if (changes.length < 1) {
-      return;
-    }
-    this._setLastSync(LOCAL, changes.local.last_seq);
-    this._setLastSync(REMOTE, changes.remote.last_seq);
-    await this._db.sync(this._getSyncDB());
-    this._updateSubjects();
-  }
-
-  async install() {
-    try {
-      const bulkGet = await this._db.bulkGet({ docs: BULK_DESIGNS });
-
-      for (let result of bulkGet.results) {
-        for (let doc of result.docs) {
-          if (doc.ok && doc.ok.views && Object.keys(doc.ok.views).length > 0) {
-            await this._db.remove(doc.ok._id, doc.ok._rev);
-          }
-        }
-        const put = await this._db.put(MAPPER_DESIGNS[result.id]);
-        if (!put.ok) {
-          throw new Error('Error with install of ' + result.id);
-        }
-      }
-
-      return this.getCurrent();
-    } catch (err) {
-      this._errorsSubject.next(err);
-    }
-  }
-
-  async remove() {
-    this._setLastSync(LOCAL, 0);
-    this._setLastSync(REMOTE, 0);
-    await this._db.destroy();
-    this._openDatabases();
-    return this.getCurrent();
-  }
-
-  async compact() {
-    try {
-      await this._db.compact();
-      await this._db.viewCleanup();
-      return this.getCurrent();
-    } catch (err) {
-      this._errorsSubject.next(err);
-    }
-  }
-
-  getCurrent() {
-    return this._db === this._dbLocal ? LOCAL : REMOTE;
-  }
-
-  getLimit() {
-    return LIMIT;
-  }
-
-  getRemoteDbName() {
-    const dbName = localStorage.getItem(REMOTE_DB_NAME_KEY);
-    return dbName ? dbName : REMOTE_DB_NAME;
-  }
-
-  setRemoteDbName(dbName) {
-    localStorage.setItem(REMOTE_DB_NAME_KEY, dbName ? dbName : REMOTE_DB_NAME);
-    this.fetchRemoteDbName();
-    this._openDatabases();
-  }
-
-  changeDb() {
-    this._db = this._getSyncDB();
-    this._setDefaultDb(this.getCurrent());
-    this._updateSubjects();
-  }
-
-  _getDefaultDb() {
-    const def = localStorage.getItem(DEFAULT_DB_KEY);
-    return def === REMOTE ? this._dbRemote : this._dbLocal;
-  }
-
-  _setDefaultDb(def) {
-    localStorage.setItem(DEFAULT_DB_KEY, def);
-  }
-
-  _updateSubjects() {
-    this.fetchCurrentDb();
-    switch (this._router.currentRoute.name) {
-      case 'home':
-        this.fetchExperiments();
-        break;
-      case 'experiment':
-        this.fetchPendings();
-        break;
-      case 'protocol':
-        break;
-      case 'import':
-        this.fetchBenchs();
-        this.fetchCampaigns();
-        break;
-      case 'config':
-        break;
-    }
-  }
-
-  _setPending(subject, callback) {
-    this._pendings[subject] = callback;
-  }
-
-  _getLastSync(dbName) {
-    const lastL = localStorage.getItem(LOCAL_SYNC_KEY);
-    const lastR = localStorage.getItem(REMOTE_SYNC_KEY);
-
-    switch (dbName) {
-      case LOCAL:
-        return lastL ? lastL : 0;
-      case REMOTE:
-        return lastR ? lastR : 0;
-      default:
-        throw new Error('Unknown database name ' + dbName);
-    }
-  }
-
-  _setLastSync(dbName, lastSync) {
-    switch (dbName) {
-      case LOCAL:
-        return localStorage.setItem(LOCAL_SYNC_KEY, lastSync);
-      case REMOTE:
-        return localStorage.setItem(REMOTE_SYNC_KEY, lastSync);
-      default:
-        throw new Error('Unknown database name ' + dbName);
-    }
-  }
-
-  _getSyncDB() {
-    return this._db === this._dbLocal ? this._dbRemote : this._dbLocal;
-  }
-  
-  _openDatabases() {
-    this._dbLocal = new PouchDB(LOCAL_DB_NAME, {
-      auto_compaction: true
-    });
-    this._dbRemote = new PouchDB(this.getRemoteDbName(), {
-      auth: { username: 'adm', password: 'pass' },
-      auto_compaction: true
-    });
-    this._db = this._getDefaultDb();
-  }
 }
-
-let _Vue;
-
-export default Vue => {
-  if (_Vue === Vue) return;
-  _Vue = Vue;
-
-  Vue.mixin({
-    beforeCreate () {
-      if (this.$options.router) {
-        this._db = new Database(this.$options.router);
-      } else if (this.$options.parent && this.$options.parent._db) {
-        this._db = this.$options.parent._db;
-      }
-    }
-  });
-
-  Object.defineProperty(Vue.prototype, '$db', {
-    get () { return this._db; }
-  });
-};
-
-/*
-DBLocal.sync(DBRemote, {
-  live: true,
-  retry: true
-}).on('change', function (info) {
-  fetchExperiments();
-}).on('paused', function (err) {
-  // replication paused (e.g. replication up to date, user went offline)
-}).on('active', function (info) {
-  // replicate resumed (e.g. new changes replicating, user went back online)
-}).on('denied', function (err) {
-  // a document failed to replicate (e.g. due to permissions)
-}).on('complete', function (info) {
-  // handle complete
-}).on('error', function (err) {
-  // handle error
-});
-*/

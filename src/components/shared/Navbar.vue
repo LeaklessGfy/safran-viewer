@@ -30,7 +30,7 @@ import Sync from './Sync';
 export default {
   data() {
     return {
-      db: 'remote'
+      db: this.$db.getDBString()
     };
   },
   subscriptions() {
@@ -40,6 +40,8 @@ export default {
   },
   methods: {
     onClickDB() {
+      this.$db.change();
+      this.db = this.$db.getDBString();
     }
   },
   components: {

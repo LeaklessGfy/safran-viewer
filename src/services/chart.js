@@ -193,6 +193,8 @@ export default class ChartService {
     series.dispose();
     series.yAxis.dispose();
     delete this._measuresSeries[measure.id];
+
+    // Handle ranges
   }
 
   getMeasureData(measure, date) {
@@ -283,31 +285,57 @@ export default class ChartService {
     this._timelineSeries.invalidateData();
   }
 
-  addRange(measure, startDate, endDate, operation, value) {
+  addRange(id, measure, startDate, endDate, operation, value) {
     const series = this._measuresSeries[measure.id];
+    
     if (!series) {
       throw new Error('Series not found');
     }
-    const axis = series.yAxis;
-    const range = axis.axisRanges.createSeriesRange(series);
-    range.date = startDate;
-    range.endDate = endDate;
-    range.contents.stroke = am4core.color('#396478');
-    range.contents.fill = am4core.color('#396478');
-    range.contents.fillOpacity = 0.5;
 
-    this._ranges[measure.id] = range;
-    //range.axisFill.tooltipText = `Range:\n[bold]${dateToTime(selectStart)}[/] to [bold]${dateToTime(selectEnd)}[/]`;
-    //range.axisFill.interactionsEnabled = true;
-    //range.axisFill.isMeasured = true;
+    const range = this._dateAxis.createSeriesRange(series);
+    range.value = startDate;
+    range.endValue = endDate;
+    range.contents.stroke = am4core.color('#FA8072');
+    range.contents.fill = am4core.color('#FA8072');
+    range.contents.fillOpacity = 0.5;
+    range.contents.strokeOpacity = 1;
+    range.axisFill.tooltipText = 'Modification';
+    range.axisFill.interactionsEnabled = true;
+    range.axisFill.isMeasured = true;
+    range.dummyData = measure.id;
+    this._ranges[id] = range;
+
+    // Backing up data
+    series.dummyData = series.data.map(data => Object.assign({}, data));
+    series.data = series.data.map(data => {
+      if (data.time >= startDate && data.time <= endDate) {
+        if (operation === 'ADD') {
+          data.value += value;
+        } else {
+          data.value = value;
+        }
+      }
+      return data;      
+    });
+
+    series.invalidateData();
   }
 
-  removeRange(measure) {
-    const range = this._ranges[measure.id];
+  removeRange(id) {
+    const range = this._ranges[id];
+
     if (!range) {
       throw new Error('Range not found');
     }
-    this._dateAxis.axisRanges.removeValue(range);
+
+    const series = this._measuresSeries[range.dummyData];
+
+    range.contents.fillOpacity = 0;
+    range.contents.stroke = series.stroke;
+    delete this._ranges[id];
+
+    series.data = series.dummyData;
+    series.invalidateData();
   }
 
   destroy() {
