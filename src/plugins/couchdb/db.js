@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { BULK_DESIGNS, MAPPER_DESIGNS } from './schema';
+import { DESIGNS, DESIGNS_MAPPER } from './schema';
 
 const DATABASE_NAME = 'safran_db';
 
@@ -38,8 +38,7 @@ export default class Database {
     return 'local';
   }
 
-  setHost(host) {
-  }
+  setHost(host) {}
 
   getLimit() {
     return this._limit;
@@ -173,6 +172,20 @@ export default class Database {
     });
   }
 
+  fetchModifications(experimentId) {
+    this._loadingSubject.next(true);
+    return this._db.query('modifications/findByExperiment', {
+      key: experimentId
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
+  }
+
   insertExperiment(experiment) {
 
   }
@@ -186,6 +199,10 @@ export default class Database {
   }
 
   insertAlarms(experimentId, alarms, date = new Date()) {
+
+  }
+
+  insertModifications(experimentId, modifications) {
 
   }
 
@@ -213,7 +230,7 @@ export default class Database {
   install() {
     this._loadingSubject.next(true);
 
-    return this._db.bulkGet({ docs: BULK_DESIGNS })
+    return this._db.bulkGet({ docs: DESIGNS })
     .then(results => {
       for (let result of results.results) {
         for (let doc of result.docs) {
@@ -221,7 +238,7 @@ export default class Database {
             this._db.remove(doc.ok._id, doc.ok._rev);
           }
         }
-        this._db.put(MAPPER_DESIGNS[result.id]);
+        this._db.put(DESIGNS_MAPPER[result.id]);
       }
     })
     .catch (err => {

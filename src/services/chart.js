@@ -18,7 +18,11 @@ const MeasureTooltip = `<center><strong>{name}</strong><br><b>{valueY}&nbsp;{uni
 
 export default class ChartService {
   _date;
-  _observer;
+  _observer = {
+    onZoom: [],
+    onDate: [],
+    onSelect: []
+  };
   _isZooming = false;
   _position = null;
 
@@ -32,12 +36,11 @@ export default class ChartService {
   _range;
   _ranges = {};
 
-  constructor(ref, startDate, endDate, observer) {
+  constructor(ref, startDate, endDate) {
     this._initChart(ref);
     this._initTime();
     this._initTimeline();
     this._initEvents();
-    this._observer = observer;
     this.rescale(startDate, endDate);
   }
 
@@ -99,7 +102,8 @@ export default class ChartService {
 
   _initEvents() {
     this._chart.events.on('track', this._onTrack.bind(this));
-    this._chart.events.on('doublehit', this._onClickChart.bind(this));
+    this._chart.events.on('hit', this._onClickChart.bind(this));
+    this._chart.events.on('doublehit', this._onDoubleClickChart.bind(this));
     this._chart.series.events.on('removed', () => {
       this._chart.invalidateData();
     });
@@ -271,6 +275,10 @@ export default class ChartService {
     this._timelineSeries.data[0].time = newTime;
     this._timelineSeries.invalidateData();
 
+    for (let observer of this._observer.onDate) {
+      observer(newTime);
+    }
+
     return newTime;
   }
 
@@ -283,6 +291,12 @@ export default class ChartService {
     this.pauseTimeline();
     this._timelineSeries.data[0].time = this._date;
     this._timelineSeries.invalidateData();
+
+    const date = new Date(this._date);
+
+    for (let observer of this._observer.onDate) {
+      observer(date);
+    }
   }
 
   addRange(id, measure, startDate, endDate, operation, value) {
@@ -325,17 +339,27 @@ export default class ChartService {
     const range = this._ranges[id];
 
     if (!range) {
-      throw new Error('Range not found');
+      return
     }
 
     const series = this._measuresSeries[range.dummyData];
-
     range.contents.fillOpacity = 0;
     range.contents.stroke = series.stroke;
     delete this._ranges[id];
-
     series.data = series.dummyData;
     series.invalidateData();
+  }
+
+  addOnZoomListener(listener) {
+    this._observer.onZoom.push(listener);
+  }
+
+  addOnDateListener(listener) {
+    this._observer.onDate.push(listener);
+  }
+
+  addOnSelectListener(listener) {
+    this._observer.onSelect.push(listener);
   }
 
   destroy() {
@@ -383,13 +407,24 @@ export default class ChartService {
   }
 
   _onClickChart() {
-    if (!this._observer) {
+    if (this._observer.onDate.length < 1) {
       return;
     }
+
     const clickDate = new Date(this._position);
     this._timelineSeries.data[0].time = clickDate;
     this._timelineSeries.invalidateData();
-    this._observer.onDateClick(clickDate);
+
+    for (let observer of this._observer.onDate) {
+      observer(clickDate);
+    }
+  }
+
+  _onDoubleClickChart() {
+    if (this._range) {
+      this._dateAxis.axisRanges.removeValue(this._range);
+      this._range = null;
+    }
   }
 
   _onClickLegend(ev) {
@@ -405,7 +440,7 @@ export default class ChartService {
   }
 
   _onScaleChange() {
-    if (!this._observer || this._isZooming) {
+    if (this._observer.onZoom.length < 1 || this._isZooming) {
       return;
     }
 
@@ -422,7 +457,9 @@ export default class ChartService {
       return;
     }
 
-    this._observer.onZoom(startDate, endDate);
+    for (let observer of this._observer.onZoom) {
+      observer(startDate, endDate);
+    }
   }
 
   _onSelectStart() {
@@ -447,8 +484,8 @@ export default class ChartService {
     this._range.axisFill.interactionsEnabled = true;
     this._range.axisFill.isMeasured = true;
 
-    if (this._observer) {
-      this._observer.onSelect(selectStart, selectEnd);
+    for (let observer of this._observer.onSelect) {
+      observer(selectStart, selectEnd);
     }
   }
 }

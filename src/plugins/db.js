@@ -86,6 +86,14 @@ class DBHandler {
   getDBString() {
     return this.isLocal() ? 'local' : 'remote';
   }
+
+  getLocal() {
+    return this._local;
+  }
+
+  getRemote() {
+    return this._remote;
+  }
 }
 
 const DB = new Proxy(new DBHandler(), {
@@ -96,8 +104,8 @@ const DB = new Proxy(new DBHandler(), {
     return target[name];
   }
 });
-let _Vue;
 
+let _Vue;
 export default Vue => {
   if (_Vue === Vue) return;
   _Vue = Vue;
