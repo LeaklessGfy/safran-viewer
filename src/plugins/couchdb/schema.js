@@ -1,20 +1,22 @@
 /* eslint-disable */
 
-export const EXPERIMENTS_DESIGN_KEY = '_design/experiments';
-export const BENCHS_DESIGN_KEY = '_design/benchs';
-export const CAMPAIGNS_DESIGN_KEY = '_design/campaigns';
-export const MEASURES_DESIGN_KEY = '_design/measures';
-export const SAMPLES_DESIGN_KEY = '_design/samples';
+const EXPERIMENTS_DESIGN_KEY = '_design/experiments';
+const BENCHS_DESIGN_KEY = '_design/benchs';
+const CAMPAIGNS_DESIGN_KEY = '_design/campaigns';
+const MEASURES_DESIGN_KEY = '_design/measures';
+const SAMPLES_DESIGN_KEY = '_design/samples';
+const MODIFICATIONS_DESIGN_KEY = '_design/modifications';
 
-export const BULK_DESIGNS = [
+export const DESIGNS = [
   { id: EXPERIMENTS_DESIGN_KEY },
   { id: BENCHS_DESIGN_KEY },
   { id: CAMPAIGNS_DESIGN_KEY },
   { id: MEASURES_DESIGN_KEY },
-  { id: SAMPLES_DESIGN_KEY }
+  { id: SAMPLES_DESIGN_KEY },
+  { id: MODIFICATIONS_DESIGN_KEY }
 ];
 
-export const EXPERIMENTS_DESIGN = {
+const EXPERIMENTS_DESIGN = {
   _id: EXPERIMENTS_DESIGN_KEY,
   views: {
     findAll: {
@@ -27,7 +29,7 @@ export const EXPERIMENTS_DESIGN = {
   }
 };
 
-export const BENCHS_DESIGN = {
+const BENCHS_DESIGN = {
   _id: BENCHS_DESIGN_KEY,
   views: {
     findAll: {
@@ -43,7 +45,7 @@ export const BENCHS_DESIGN = {
   }
 };
 
-export const CAMPAIGNS_DESIGN = {
+const CAMPAIGNS_DESIGN = {
   _id: CAMPAIGNS_DESIGN_KEY,
   views: {
     findAll: {
@@ -59,7 +61,7 @@ export const CAMPAIGNS_DESIGN = {
   }
 };
 
-export const MEASURES_DESIGN = {
+const MEASURES_DESIGN = {
   _id: MEASURES_DESIGN_KEY,
   views: {
     findAll: {
@@ -76,7 +78,7 @@ export const MEASURES_DESIGN = {
   }
 };
 
-export const SAMPLES_DESIGN = {
+const SAMPLES_DESIGN = {
   _id: SAMPLES_DESIGN_KEY,
   views: {
     findByMeasure: {
@@ -84,18 +86,34 @@ export const SAMPLES_DESIGN = {
         if (doc.typeX === 'sample') {
           emit(doc.measure, { time: doc.time, value: doc.value });
         }
-      }.toString(),
-      reduce: function(keys, values) {
-        return true;
       }.toString()
     }
   }
 };
 
-export const MAPPER_DESIGNS = {
+const MODIFICATIONS_DESIGN = {
+  _id: MODIFICATIONS_DESIGN_KEY,
+  views: {
+    findByExperiment: {
+      map: function(doc) {
+        if (doc.typeX === 'modification') {
+          emit(doc.experiment, {
+            startTime: doc.startTime,
+            endTime: doc.endTime,
+            operation: doc.operation,
+            value: doc.value
+          });
+        }
+      }.toString()
+    }
+  }
+};
+
+export const DESIGNS_MAPPER = {
   [EXPERIMENTS_DESIGN_KEY]: EXPERIMENTS_DESIGN,
   [BENCHS_DESIGN_KEY]: BENCHS_DESIGN,
   [CAMPAIGNS_DESIGN_KEY]: CAMPAIGNS_DESIGN,
   [MEASURES_DESIGN_KEY]: MEASURES_DESIGN,
-  [SAMPLES_DESIGN_KEY]: SAMPLES_DESIGN
+  [SAMPLES_DESIGN_KEY]: SAMPLES_DESIGN,
+  [MODIFICATIONS_DESIGN_KEY]: MODIFICATIONS_DESIGN
 };

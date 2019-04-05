@@ -12,7 +12,10 @@
       </b-navbar-nav>
 
       <b-navbar-nav class="ml-auto">
-        <b-button :variant="db === 'local' ? 'light' : 'dark'" size="sm" class="mx-2" @click="changeDb">
+        <b-button v-if="loading" variant="info" size="sm" class="mx-2">
+          <b-spinner small label="Loading..." variant="light" type="grow"></b-spinner> Loading...
+        </b-button>
+        <b-button :variant="db === 'local' ? 'light' : 'dark'" size="sm" class="mx-2" @click="onClickDB">
           <v-icon name="database"/> {{ db.toUpperCase() }}
         </b-button>
         <sync/>
@@ -25,14 +28,20 @@
 import Sync from './Sync';
 
 export default {
+  data() {
+    return {
+      db: this.$db.getDBString()
+    };
+  },
   subscriptions() {
     return {
-      db: this.$db.fetchCurrentDb()
-    }
+      loading: this.$db.getLoading()
+    };
   },
   methods: {
-    changeDb() {
-      this.$db.changeDb();
+    onClickDB() {
+      this.$db.change();
+      this.db = this.$db.getDBString();
     }
   },
   components: {

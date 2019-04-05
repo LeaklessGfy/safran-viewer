@@ -32,7 +32,7 @@ class ExperimentParser {
     return { beginTime, endTime };
   }
 
-  async parseMeasures(experimentId) {
+  async parseMeasures() {
     const info = await this._readLine(this._experimentReader, 2, 1);
     this._checkLine(info, 1);
     this._observer.onProgress(info.progress);
@@ -41,14 +41,13 @@ class ExperimentParser {
       this._parse(info.lines[0], FIRST_COLUMN_SAMPLE),
       FIRST_COLUMN_SAMPLE,
       v => v,
-      v => this._parseMeasure(v, experimentId)
+      v => this._parseMeasure(v)
     );
 
     const { types, units } = await this._parseTypesUnits();
     for (let i in types) {
       measures[i].type = types[i];
       measures[i].unit = units[i];
-      //measures[i].samples = [];
     }
 
     return measures;
@@ -102,7 +101,7 @@ class ExperimentParser {
     return { samples, isEof, nextIndex: i + index };
   }
 
-  async parseAlarms(experimentId) {
+  async parseAlarms() {
     let isEof = false;
     const alarms = [];
 
@@ -112,14 +111,17 @@ class ExperimentParser {
 
     for (let i = 0; !isEof; i++) {
       const info = await this._readLine(this._alarmsReader, i, 1);
-      this._checkLineEof(info, 1);
-      this._observer.onProgress(info.progress);
+      this._checkLineEof(info, 0);
+      //this._observer.onProgress(info.progress);
 
       const line = info.lines[0];
-      if (!line) continue;
+      if (!line) {
+        isEof = true;
+        break;
+      };
 
       const arr = this._parse(line, 3);
-      const alarm = this._parseAlarm(arr[0], arr[1], arr[2], experimentId);
+      const alarm = this._parseAlarm(arr[0].split(" ")[1], arr[1], arr[2]);
       alarms.push(alarm);
 
       if (info.isEof) {
@@ -131,34 +133,25 @@ class ExperimentParser {
     return alarms;
   }
 
-  _parseMeasure(name, experiment) {
+  _parseMeasure(name) {
     return {
-      typeX: 'measure',
-      name,
-      experiment
+      name
     };
   }
 
   _parseSample(value, time, measure) {
     return {
-      typeX: 'sample',
       value,
       time,
       measure
     };
   }
 
-  _parseAlarm(time, level, message, experiment) {
+  _parseAlarm(time, level, message) {
     return {
-      typeX: 'alarm',
-      //reference: null,
-      //name: null,
-      //state: null,
-      //order: null,
-      time, // LOCAL DATE TIME
+      time,
       level: parseInt(level, 10),
-      message,
-      experiment
+      message
     };
   }
 

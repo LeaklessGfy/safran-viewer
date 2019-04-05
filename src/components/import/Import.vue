@@ -83,7 +83,6 @@
           :state="Boolean(experimentFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
-          required
         />
       </b-form-group>
 
@@ -128,33 +127,27 @@ const defaultState = {
 };
 
 export default {
-  data: () => (defaultState),
+  data: () => Object.assign({}, defaultState),
   subscriptions() {
     return {
       benchs: this.$db.fetchBenchs().pipe(
-        map(benchs => {
-          if (!benchs.rows) return benchs;
-          return benchs.rows.map(r => ({ text: r.value.name, value: r.value }));
-        })
+        map(benchs => benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })))
       ),
       campaigns: this.$db.fetchCampaigns().pipe(
-        map(campaigns => {
-          if (!campaigns.rows) return campaigns;
-          return campaigns.rows.map(r => ({ text: r.value.id12c, value: r.value }));
-        }),
+        map(campaigns => campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })))
       )
     };
   },
   methods: {
     async onSubmit(e) {
       e.preventDefault();
-      const experiment = new this.$db.Experiment(
-        this.reference,
-        this.name,
-        this.bench,
-        this.campaign,
-        this.$db.getCurrent() === 'local'
-      );
+      const experiment = {
+        reference: this.reference,
+        name: this.name,
+        bench: this.bench,
+        campaign: this.campaign,
+        isLocal: false
+      };
 
       if (!this.local) {
         return;
@@ -177,8 +170,11 @@ export default {
       );
       service.import();
     },
-    onReset() {
-      Object.assing(this.$data, defaultState);
+    onReset(e) {
+      e.preventDefault();
+      for (let key of Object.keys(defaultState)) {
+        this.$data[key] = defaultState[key];
+      }
     }
   }
 };

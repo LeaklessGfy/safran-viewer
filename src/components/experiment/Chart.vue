@@ -1,161 +1,84 @@
 <template>
   <div>
-    <b-row>
-      <b-col>
-        <cleave
-          v-model="startTime"
-          :options="options"
-          class="form-control"
-          placeholder="hh:mm:ss,ssss"
-          :raw="false"
-          @blur.native="onTimeChangeEnd"
-          @keyup.native="onTimeChangeEnd"
-        />
-      </b-col>
-
-      <b-col>
-        <b-button v-b-modal.measuresModal>
-          <v-icon name="chart-line"/> Mesures
-        </b-button>
-      </b-col>
-
-      <b-col>
-        <cleave
-          v-model="endTime"
-          :options="options"
-          class="form-control"
-          placeholder="hh:mm:ss,ssss"
-          :raw="false"
-          @blur.native="onTimeChangeEnd"
-          @keyup.native="onTimeChangeEnd"
-        />
-      </b-col>
-    </b-row>
+    <chart-menu
+      v-if="chart"
+      :chart="chart"
+      :experiment="experiment"
+      :onOkMeasure="onOkMeasure"
+    />
     
     <div class="chart" :ref="refName"/>
 
-    <b-modal id="measuresModal" title="Mesures" @show="onMeasuresShow" @ok="onOk" size="xl">
-      <b-list-group>
-        <b-list-group-item
-          v-for="measure in measures.rows"
-          v-bind:key="measure.id"
-          class="d-flex justify-content-between align-items-center"
-        >
-          {{ measure.value.name + (measure.value.unit ? ' - ' + measure.value.unit : '') }}
-          <b-button
-            v-if="!tmpMeasures.some(m => m.id === measure.id)"
-            @click="() => onClickAdd(measure)"
-            variant="outline-success"
-          >
-            Ajouter
-          </b-button>
-          <b-button
-            v-else
-            @click="() => onClickRemove(measure)"
-            variant="outline-danger"
-          >
-            Retirer
-          </b-button>
-        </b-list-group-item>
-      </b-list-group>
-
-      <b-pagination
-        v-model="currentPage"
-        :total-rows="measures.total_rows"
-        :per-page="limit"
-        @change="onPageChange"
-        size="md"
-        class="mt-3"
-        align="center"
-      />
-    </b-modal>
+    <chart-tabs
+      v-if="chart"
+      :chart="chart"
+      :experiment="experiment"
+      :measuresId="Object.values(selectedMeasures).map(m => m.id)"
+      :timelineValues="timelineValues"
+    />
   </div>
 </template>
 
 <script>
 import ChartService from '../../services/chart';
-import { dateToTime, stringToDate, timeToDate } from '../../services/date';
+import { dateToTime } from '../../services/date';
+import Menu from './chart/Menu';
+import Tabs from './chart/Tabs';
 
 export default {
+  props: {
+    refName: String
+  },
   data() {
     return {
+      /* CHART */
       chart: null,
-      startTime: null,
-      endTime: null,
-      currentPage: 1,
-      limit: this.$db.getLimit(),
-      options: {
-        blocks: [2, 2, 2, 4],
-        delimiters: [':', ':', '.'],
-        numericOnly: true,
-        numeralPositiveOnly: true,
-        stripLeadingZeroes: false
-      },
-      tmpMeasures: [],
-      selectedMeasures: {}
+      sub: null,
+      /* MEASURE */
+      selectedMeasures: {},
+      timelineValues: []
     }
-  },
-  props: {
-    refName: String,
-    experiment: Object
   },
   subscriptions() {
     return {
-      measures: this.$db._measuresSubject
+      experiment: this.$db.getExperiment(),
+      measures: this.$db.getMeasures()
     }
   },
   mounted() {
-    const startDate = stringToDate(this.experiment.beginTime);
-    const endDate = stringToDate(this.experiment.endTime);
-
-    this.startTime = dateToTime(startDate);
-    this.endTime = dateToTime(endDate);
-
-    this.chart = new ChartService(this.$refs[this.refName], startDate, endDate, {
-      onScaleChange: (startDate, endDate) => {
-        this.startTime = dateToTime(startDate);
-        this.endTime = dateToTime(endDate);
+    this.chart = new ChartService(this.$refs[this.refName], this.experiment.beginTime, this.experiment.endTime, {
+      onSelect: (startDate, endDate) => {
+        this.modification.startTime = dateToTime(startDate);
+        this.modification.endTime = dateToTime(endDate);
       }
+    });
+
+    this.chart.addOnDateListener(date => {
+      this.updateTimelineValues(date);
+    });
+
+    this.$db.fetchAlarms(this.experiment.id)
+    .then(alarms => {
+      this.chart.addAlarms(alarms);
+    });
+
+    this.sub = this.$db.getExperiment().subscribe(experiment => {
+      this.chart.rescale(experiment.beginTime, experiment.endTime);
     });
   },
   beforeDestroy() {
     this.chart.destroy();
+    this.sub.unsubscribe();
   },
   methods: {
-    onTimeChangeEnd(e) {
-      if (!this.chart) {
-        return;
-      }
-      if (e.keyCode === undefined || e.keyCode === 13) {
-        const startDate = timeToDate(this.startTime, this.experiment.beginTime);
-        const endDate = timeToDate(this.endTime, this.experiment.endTime);
-        this.chart.zoom(startDate, endDate);
-      }
-    },
-    onMeasuresShow() {
-      if (this.measures.length < 1) {
-        this.$db.fetchMeasures(this.$route.params.id, this.currentPage);
-      }
-    },
-    onPageChange(page) {
-      this.$db.fetchMeasures(this.$route.params.id, page);
-    },
-    onClickAdd(measure) {
-      this.tmpMeasures.push(measure);
-    },
-    onClickRemove(measure) {
-      this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
-    },
-    onOk() {
+    async onOkMeasure(tmpMeasures) {
       const former = Object.assign({}, this.selectedMeasures);
       this.selectedMeasures = {};
-      for (let measure of this.tmpMeasures) {
+      for (let measure of tmpMeasures) {
         if (!former[measure.id]) {
-          this.$db.fetchSamples(measure.id)
-          .then(samples => {
-            this.chart.addMeasure(measure.value, samples.rows.map(row => row.value));
-          });
           this.selectedMeasures[measure.id] = measure;
+          const samples = await this.$db.fetchSamples(measure.id);
+          this.chart.addMeasure(measure, samples);
         } else {
           this.selectedMeasures[measure.id] = former[measure.id];
           delete former[measure.id];
@@ -164,7 +87,22 @@ export default {
       for (let remove of Object.values(former)) {
         this.chart.removeMeasure(remove);
       }
+    },
+    updateTimelineValues(date) {
+      this.timelineValues = Object.values(this.selectedMeasures).map(measure => {
+        const data = this.chart.getMeasureData(measure, date);
+        return {
+          measure: measure.name,
+          type: measure.type,
+          unit: measure.unit,
+          value: data ? data.valueY : '-'
+        };
+      });
     }
+  },
+  components: {
+    'chart-menu': Menu,
+    'chart-tabs': Tabs
   }
 };
 </script>
