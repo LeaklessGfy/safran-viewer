@@ -1,9 +1,12 @@
+import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Home from './components/home/Home';
-import Experiment from './components/experiment/Experiment';
-import Protocol from './components/protocol/Protocol';
-import Import from './components/import/Import';
-import Config from './components/config/Config';
+import Home from '@/components/home/Home';
+import Experiment from '@/components/experiment/Experiment';
+import Protocol from '@/components/protocol/Protocol';
+import Import from '@/components/import/Import';
+import Config from '@/components/config/Config';
+
+Vue.use(VueRouter);
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -13,6 +16,4 @@ const routes = [
   { path: '/config', name: 'config', component: Config }
 ];
 
-const router = new VueRouter({ routes });
-
-export default router;
+export const router = new VueRouter({ routes });

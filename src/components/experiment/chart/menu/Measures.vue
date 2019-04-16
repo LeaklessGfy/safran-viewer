@@ -1,28 +1,34 @@
 <template>
   <span class="d-inline-block">
     <b-button v-b-modal.measuresModal>
-      <v-icon name="chart-line"/> Mesures
+      <v-icon name="chart-line" /> Mesures
     </b-button>
 
-    <b-modal id="measuresModal" title="Mesures" @show="onShowMeasures" @ok="() => onOkMeasure(tmpMeasures)" size="xl">
+    <b-modal
+      id="measuresModal"
+      title="Mesures"
+      size="xl"
+      @show="onShowMeasures"
+      @ok="onSubmitMeasure"
+    >
       <b-list-group>
         <b-list-group-item
           v-for="measure in measures"
-          v-bind:key="measure.id"
+          :key="measure.id"
           class="d-flex justify-content-between align-items-center"
         >
           {{ measure.name + (measure.unit ? ' - ' + measure.unit : '') }}
           <b-button
             v-if="!tmpMeasures.some(m => m.id === measure.id)"
-            @click="() => onClickAddMeasure(measure)"
             variant="outline-success"
+            @click="() => onClickAddMeasure(measure)"
           >
             Ajouter
           </b-button>
           <b-button
             v-else
-            @click="() => onClickRemoveMeasure(measure)"
             variant="outline-danger"
+            @click="() => onClickRemoveMeasure(measure)"
           >
             Retirer
           </b-button>
@@ -33,10 +39,10 @@
         v-model="measures.current"
         :total-rows="measures.total"
         :per-page="measures.limit"
-        @change="onMeasurePageChange"
         size="md"
         class="mt-3"
         align="center"
+        @change="onMeasurePageChange"
       />
     </b-modal>
   </span>
@@ -45,12 +51,28 @@
 <script>
 export default {
   props: {
-    onOkMeasure: Function
+    refId: {
+      type: Number,
+      required: true
+    }
   },
   data() {
     return {
       tmpMeasures: []
     };
+  },
+  computed: {
+    chart() {
+      return this.$store.state.charts[this.refId].chart;
+    },
+    selectedMeasures: {
+      get() {
+        return this.$store.state.charts[this.refId].selectedMeasures;
+      },
+      set(selectedMeasures) {
+        this.$store.commit('updateChart', { refId: this.refId, selectedMeasures });
+      }
+    }
   },
   subscriptions() {
     return {
@@ -71,6 +93,27 @@ export default {
     },
     onClickRemoveMeasure(measure) {
       this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
+    },
+    async onSubmitMeasure() {
+      const former = Object.assign({}, this.selectedMeasures);
+      this.selectedMeasures = {};
+      
+      for (let tmp of this.tmpMeasures) {
+        if (!former[tmp.id]) {
+          this.selectedMeasures[tmp.id] = tmp;
+          const samples = await this.$db.fetchSamples(tmp.id);
+          this.chart.addMeasure(tmp, samples);
+        } else {
+          this.selectedMeasures[tmp.id] = former[tmp.id];
+          delete former[tmp.id];
+        }
+      }
+      
+      for (let remove of Object.values(former)) {
+        this.chart.removeMeasure(remove);
+      }
+
+      this.$store.commit('updateTimelineValues', { refId: this.refId });
     }
   }
 }

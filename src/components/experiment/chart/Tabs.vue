@@ -1,14 +1,20 @@
 <template>
   <b-tabs content-class="mt-3">
-
     <!-- MODIFICATIONS -->
-    <b-tab title="Modifications" active>
+    <b-tab
+      title="Modifications"
+      active
+    >
       <!-- ADD -->
-      <b-form @submit="onSubmitModification" inline class="justify-content-center">
+      <b-form
+        class="justify-content-center"
+        inline
+        @submit="onSubmitModification"
+      >
         <b-form-select
           v-model="modification.measure"
           class="mr-2"
-          :options="measuresId"
+          :options="measures(refId).map(m => m.id)"
           required
         />
 
@@ -28,7 +34,11 @@
           required
         />
 
-        <b-input v-model="modification.value" class="mr-2" type="number" />
+        <b-input
+          v-model="modification.value"
+          class="mr-2"
+          type="number"
+        />
 
         <cleave
           v-model="modification.endTime"
@@ -39,19 +49,47 @@
           required
         />
 
-        <b-button type="submit" variant="primary">Ajouter</b-button>
+        <b-button
+          type="submit"
+          variant="primary"
+        >
+          Ajouter
+        </b-button>
       </b-form>
 
       <!-- LIST -->
-      <b-table striped hover :items="modifications" class="mt-2">
-        <template slot="actions" slot-scope="scope">
-          <b-button v-if="!scope.item.isApply" size="sm" variant="primary" @click="() => onToggleModification(scope.item, true)">
+      <b-table
+        striped
+        hover
+        :items="modifications"
+        class="mt-2"
+      >
+        <template
+          slot="actions"
+          slot-scope="scope"
+        >
+          <b-button
+            v-if="!scope.item.isApply"
+            size="sm"
+            variant="primary"
+            @click="() => onToggleModification(scope.item, true)"
+          >
             Appliquer
           </b-button>
-          <b-button v-else size="sm" variant="warning" @click="() => onToggleModification(scope.item, false)">
+          <b-button
+            v-else
+            size="sm"
+            variant="warning"
+            @click="() => onToggleModification(scope.item, false)"
+          >
             Enlever
           </b-button>
-          <b-button size="sm" variant="danger" class="ml-2" @click="() => onRemoveModification(scope.item)">
+          <b-button
+            size="sm"
+            variant="danger"
+            class="ml-2"
+            @click="() => onRemoveModification(scope.item)"
+          >
             Supprimer
           </b-button>
         </template>
@@ -60,44 +98,60 @@
 
     <!-- LECTURE -->
     <b-tab title="Lecture">
-      <b-table striped hover :items="timelineValues" />
+      <b-table
+        striped
+        hover
+        :items="timelineValues"
+      />
     </b-tab>
   </b-tabs>
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex';
 import uuid from 'uuid/v4';
-import { dateToTime, timeToTimestamp } from '../../../services/date';
+import { dateToTime, timeToTimestamp } from '@/services/date';
 
 export default {
   props: {
-    chart: Object,
-    experiment: Object,
-    measuresId: Array,
-    timelineValues: Array
+    refId: {
+      type: Number,
+      required: true
+    },
+    experiment: {
+      type: Object,
+      required: true
+    }
   },
-  data() {
-    return {
-      options: {
-        blocks: [2, 2, 2, 4],
-        delimiters: [':', ':', '.'],
-        numericOnly: true,
-        numeralPositiveOnly: true,
-        stripLeadingZeroes: false
+  computed: {
+    timelineValues: {
+      get() {
+        return this.$store.state.charts[this.refId].timelineValues;
       },
-      modification: {
-        measure: null,
-        startTime: null,
-        endTime: null,
-        operation: 'ADD',
-        value: 0,
-        isApply: false,
-        actions: null
+      set(timelineValues) {
+        this.$store.commit('updateChart', { refId: this.refId, timelineValues });
+      }
+    },
+    ...mapState({
+      chart(state) {
+        return state.charts[this.refId].chart;
       },
-      modifications: []
-    };
+      modification(state) {
+        return state.charts[this.refId].modification;
+      },
+      modifications(state) {
+        return state.charts[this.refId].modifications;
+      },
+      options: state => state.options
+    }),
+    ...mapGetters([
+      'measures'
+    ])
   },
   mounted() {
+    this.chart.addOnDateListener(date => {
+      this.$store.commit('updateTimelineValues', { refId: this.refId, date });
+    });
     this.chart.addOnSelectListener((startDate, endDate) => {
       this.modification.startTime = dateToTime(startDate);
       this.modification.endTime = dateToTime(endDate);
@@ -106,10 +160,7 @@ export default {
   methods: {
     onSubmitModification(e) {
       e.preventDefault();
-      this.modifications.push({
-        id: uuid(),
-        ...this.modification
-      });
+      this.modifications = [...this.modifications, { id: uuid(), ...this.modification }];
     },
     onToggleModification(modification, state) {
       modification.isApply = state;

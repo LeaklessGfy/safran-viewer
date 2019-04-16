@@ -1,25 +1,43 @@
 <template>
   <b-button-group class="mt-2">
-    <b-button variant="warning" :disabled="state !== 1" @click="() => onClickTimeline(2)">
-      <v-icon name="pause"/>
+    <b-button
+      variant="warning"
+      :disabled="state !== 1"
+      @click="pauseTimeline"
+    >
+      <v-icon name="pause" />
     </b-button>
-    <b-button variant="primary" :disabled="state === 1" @click="() => onClickTimeline(1)">
-      <v-icon name="play"/>
+    <b-button
+      variant="primary"
+      :disabled="state === 1"
+      @click="startTimeline"
+    >
+      <v-icon name="play" />
     </b-button>
-    <b-button variant="danger" :disabled="state === 0" @click="() => onClickTimeline(0)">
-      <v-icon name="stop"/>
+    <b-button
+      variant="danger"
+      :disabled="state === 0"
+      @click="stopTimeline"
+    >
+      <v-icon name="stop" />
     </b-button>
   </b-button-group>
 </template>
 
 <script>
-import { timeToTimestamp } from '../../../../services/date';
+import { mapState } from 'vuex';
+import { timeToTimestamp } from '@/services/date';
 
 export default {
   props: {
-    chart: Object,
-    experiment: Object,
-    currentTime: String
+    refId: {
+      type: Number,
+      required: true
+    },
+    experiment: {
+      type: Object,
+      required: true
+    }
   },
   data() {
     return {
@@ -27,23 +45,19 @@ export default {
       interval: null
     };
   },
-  methods: {
-    onClickTimeline(state) {
-      this.state = state;
-
-      switch (state) {
-        case 0:
-          this.stopTimeline();
-          break;
-        case 1:
-          this.startTimeline();
-          break;
-        case 2:
-          this.pauseTimeline();
-          break;
+  computed: {
+    ...mapState({
+      chart(state) {
+        return state.charts[this.refId].chart;
+      },
+      currentTime(state) {
+        return state.charts[this.refId].currentTime;
       }
-    },
+    })
+  },
+  methods: {
     startTimeline() {
+      this.state = 1;
       const speed = 100;
       const currentDate = timeToTimestamp(this.currentTime, this.experiment.beginTime);
       this.chart.startTimeline(currentDate);
@@ -57,10 +71,12 @@ export default {
       }, speed);
     },
     pauseTimeline() {
+      this.state = 2;
       clearInterval(this.interval);
       this.chart.pauseTimeline();
     },
     stopTimeline() {
+      this.state = 0;
       clearInterval(this.interval);
       this.chart.stopTimeline();
     },

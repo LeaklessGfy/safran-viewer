@@ -1,7 +1,7 @@
 import * as Influx from 'influx';
 import uuidv4 from 'uuid/v4';
 import Schema from './schema';
-import { dateToTimestamp, timeToTimestamp } from '../../services/date';
+import { dateToTimestamp, timeToTimestamp } from '@/services/date';
 
 const DATABASE_NAME = 'safran_db';
 
