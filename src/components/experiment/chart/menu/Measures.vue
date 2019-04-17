@@ -65,25 +65,21 @@ export default {
     chart() {
       return this.$store.state.charts[this.refId].chart;
     },
-    selectedMeasures: {
-      get() {
-        return this.$store.state.charts[this.refId].selectedMeasures;
-      },
-      set(selectedMeasures) {
-        this.$store.commit('updateChart', { refId: this.refId, selectedMeasures });
-      }
+    selectedMeasures() {
+      return this.$store.state.charts[this.refId].selectedMeasures;
     }
   },
   subscriptions() {
     return {
       measures: this.$db.getMeasures()
-    }
+    };
   },
   methods: {
     onShowMeasures() {
       if (this.measures.length < 1) {
         this.$db.fetchMeasures(this.$route.params.id);
       }
+      this.tmpMeasures = Object.values(this.selectedMeasures);
     },
     onMeasurePageChange(page) {
       this.$db.fetchMeasures(this.$route.params.id, page);
@@ -96,15 +92,15 @@ export default {
     },
     async onSubmitMeasure() {
       const former = Object.assign({}, this.selectedMeasures);
-      this.selectedMeasures = {};
+      const selectedMeasures = {};
       
       for (let tmp of this.tmpMeasures) {
         if (!former[tmp.id]) {
-          this.selectedMeasures[tmp.id] = tmp;
+          selectedMeasures[tmp.id] = tmp;
           const samples = await this.$db.fetchSamples(tmp.id);
           this.chart.addMeasure(tmp, samples);
         } else {
-          this.selectedMeasures[tmp.id] = former[tmp.id];
+          selectedMeasures[tmp.id] = former[tmp.id];
           delete former[tmp.id];
         }
       }
@@ -113,8 +109,10 @@ export default {
         this.chart.removeMeasure(remove);
       }
 
+      this.$store.commit('updateChart', { refId: this.refId, selectedMeasures });
       this.$store.commit('updateTimelineValues', { refId: this.refId });
+      this.$db.fetchModifications(this.$route.params.id);
     }
   }
-}
+};
 </script>

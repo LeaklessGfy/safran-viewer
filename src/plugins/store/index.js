@@ -56,6 +56,9 @@ export const store = new Vuex.Store({
           value: data ? data.valueY : '-'
         };
       });
+    },
+    addSelectedMeasure(state, { refId, measure }) {
+      state.charts[refId].selectedMeasures[measure.id] = measure;
     }
   },
   actions: {},

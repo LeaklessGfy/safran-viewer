@@ -3,7 +3,6 @@ import LocalDB from './couchdb/db';
 import RemoteDB from './influxdb/db';
 
 class DBHandler {
-  _current;
   _local;
   _remote;
 
@@ -15,6 +14,7 @@ class DBHandler {
   _benchsSubject;
   _campaignsSubject;
   _measuresSubject;
+  _modificationsSubject;
 
   constructor() {
     /* SUBJECTS */
@@ -25,18 +25,23 @@ class DBHandler {
     this._benchsSubject = new BehaviorSubject([]);
     this._campaignsSubject = new BehaviorSubject([]);
     this._measuresSubject = new BehaviorSubject([]);
+    this._modificationsSubject = new BehaviorSubject([]);
 
     /* DB */
     this._local = new LocalDB(
-      this._errorsSubject, this._loadingSubject, this._experimentSubject, this._experimentsSubject,
-      this._benchsSubject, this._campaignsSubject, this._measuresSubject
+      this._errorsSubject,
+      this._loadingSubject,
+      this._modificationsSubject
     );
     this._remote = new RemoteDB(
-      this._errorsSubject, this._loadingSubject, this._experimentSubject, this._experimentsSubject,
-      this._benchsSubject, this._campaignsSubject, this._measuresSubject
+      this._errorsSubject,
+      this._loadingSubject,
+      this._experimentSubject,
+      this._experimentsSubject,
+      this._benchsSubject,
+      this._campaignsSubject,
+      this._measuresSubject
     );
-
-    this._current = this._remote;
   }
 
   getErrors() {
@@ -67,24 +72,8 @@ class DBHandler {
     return this._measuresSubject;
   }
 
-  change() {
-    this._current = this.getAlternate();
-  }
-
-  isLocal() {
-    return this._current === this._local;
-  }
-
-  isRemote() {
-    return this._current === this._remote;
-  }
-
-  getAlternate() {
-    return this.isLocal() ? this._remote : this._local;
-  }
-
-  getDBString() {
-    return this.isLocal() ? 'local' : 'remote';
+  getModifications() {
+    return this._modificationsSubject;
   }
 
   getLocal() {
@@ -98,10 +87,16 @@ class DBHandler {
 
 const DB = new Proxy(new DBHandler(), {
   get: function(target, name) {
-    if (!target[name]) {
-      return target._current[name];
+    if (target[name]) {
+      return target[name];
     }
-    return target[name];
+    if (target._remote[name]) {
+      return target._remote[name].bind(target._remote);
+    }
+    if (target._local[name]) {
+      return target._local[name].bind(target._local);
+    }
+    throw new Error('Unknown method ' + name);
   }
 });
 

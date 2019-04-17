@@ -31,7 +31,7 @@ export default class Database {
     this._errorsSubject = errors;
     this._loadingSubject = loading;
     this._experimentSubject = experiment;
-    this._experimentsSubject = experiments
+    this._experimentsSubject = experiments;
     this._benchsSubject = benchs;
     this._campaignsSubject = campaigns;
     this._measuresSubject = measures;
@@ -132,6 +132,24 @@ export default class Database {
       this._loadingSubject.next(false);
     });
     return this._campaignsSubject;
+  }
+
+  fetchMeasure(id) {
+    this._loadingSubject.next(true);
+    return this._db.query(`SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
+    .then(result => {
+      if (result.length < 1) {
+        throw new Error('Experiment not found with id ' + id);
+      }
+      return result[0];
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
   }
 
   fetchMeasures(experimentId, page = 1) {

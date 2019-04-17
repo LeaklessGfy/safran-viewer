@@ -65,6 +65,19 @@
         class="mt-2"
       >
         <template
+          slot="isLoad"
+          slot-scope="data"
+        >
+          <b-button
+            v-if="!data.item.isLoad"
+            size="sm"
+            @click="() => onLoadMeasure(data.item.measure)"
+          >
+            <v-icon name="cloud-download-alt" />
+            Charger
+          </b-button>
+        </template>
+        <template
           slot="actions"
           slot-scope="scope"
         >
@@ -72,6 +85,7 @@
             v-if="!scope.item.isApply"
             size="sm"
             variant="primary"
+            :disabled="!scope.item.isLoad"
             @click="() => onToggleModification(scope.item, true)"
           >
             Appliquer
@@ -109,7 +123,7 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex';
-import uuid from 'uuid/v4';
+import { map } from 'rxjs/operators';
 import { dateToTime, timeToTimestamp } from '@/services/date';
 
 export default {
@@ -124,29 +138,34 @@ export default {
     }
   },
   computed: {
-    timelineValues: {
-      get() {
-        return this.$store.state.charts[this.refId].timelineValues;
-      },
-      set(timelineValues) {
-        this.$store.commit('updateChart', { refId: this.refId, timelineValues });
-      }
-    },
     ...mapState({
       chart(state) {
         return state.charts[this.refId].chart;
       },
+      timelineValues(state) {
+        return state.charts[this.refId].timelineValues;
+      },
+      selectedMeasures(state) {
+        return state.charts[this.refId].selectedMeasures;
+      },
       modification(state) {
         return state.charts[this.refId].modification;
-      },
-      modifications(state) {
-        return state.charts[this.refId].modifications;
       },
       options: state => state.options
     }),
     ...mapGetters([
       'measures'
     ])
+  },
+  subscriptions() {
+    return {
+      modifications: this.$db.fetchModifications(this.experiment.id).pipe(
+        map(modifications => modifications.map(m => {
+          m.isLoad = this.measures(this.refId).map(m => m.id).includes(m.measure);
+          return m;
+        }))
+      )
+    };
   },
   mounted() {
     this.chart.addOnDateListener(date => {
@@ -160,7 +179,7 @@ export default {
   methods: {
     onSubmitModification(e) {
       e.preventDefault();
-      this.modifications = [...this.modifications, { id: uuid(), ...this.modification }];
+      this.$db.insertModification(this.experiment.id, this.modification);
     },
     onToggleModification(modification, state) {
       modification.isApply = state;
@@ -180,7 +199,15 @@ export default {
     onRemoveModification(modification) {
       this.chart.removeRange(modification.id);
       this.modifications = this.modifications.filter(m => m !== modification);
+    },
+    async onLoadMeasure(id) {
+      const measure = await this.$db.fetchMeasure(id);
+      this.$store.commit('addSelectedMeasure', { refId: this.refId, measure });
+      const samples = await this.$db.fetchSamples(id);
+      this.chart.addMeasure(measure, samples);
+      await this.$db.fetchModifications();
+      this.$store.commit('updateTimelineValues', { refId: this.refId });
     }
   }
-}
+};
 </script>

@@ -97,12 +97,7 @@ const MODIFICATIONS_DESIGN = {
     findByExperiment: {
       map: function(doc) {
         if (doc.typeX === 'modification') {
-          emit(doc.experiment, {
-            startTime: doc.startTime,
-            endTime: doc.endTime,
-            operation: doc.operation,
-            value: doc.value
-          });
+          emit(doc.experimentId, null);
         }
       }.toString()
     }

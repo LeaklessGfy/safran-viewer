@@ -45,7 +45,9 @@
       "plugin:vue/recommended",
       "eslint:recommended"
     ],
-    "rules": {},
+    "rules": {
+      "semi": ["error", "always"]
+    },
     "parserOptions": {
       "parser": "babel-eslint"
     }
