@@ -27,8 +27,6 @@
     <chart
       v-if="experiment.id"
       class="mt-2"
-      :ref-id="0"
-      ref-name="chart1"
     />
   </b-container>
 </template>

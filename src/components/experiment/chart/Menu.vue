@@ -15,14 +15,14 @@
 
     <!-- MENU -->
     <b-col cols="3">
-      <chart-menu-measures :ref-id="refId" />
-      <chart-menu-mode :ref-id="refId" />
+      <chart-menu-measures :mod="mod" :experiment="experiment" />
+      <chart-menu-mode :mod="mod" :experiment="experiment" />
     </b-col>
 
     <b-col cols="3">
       <chart-menu-player
         class="text-center"
-        :ref-id="refId"
+        :mod="mod"
         :experiment="experiment"
       />
     </b-col>
@@ -55,11 +55,11 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import { dateToTime, timeToTimestamp } from '@/services/date';
 import Measures from './menu/Measures';
 import Mode from './menu/Mode';
 import Player from './menu/Player';
-import { mapState } from 'vuex';
 
 export default {
   components: {
@@ -68,8 +68,8 @@ export default {
     'chart-menu-player': Player
   },
   props: {
-    refId: {
-      type: Number,
+    mod: {
+      type: String,
       required: true
     },
     experiment: {
@@ -80,57 +80,48 @@ export default {
   computed: {
     startTime: {
       get() {
-        return this.$store.state.charts[this.refId].startTime;
+        return this.$store.state[this.mod].startTime;
       },
       set(startTime) {
-        this.$store.commit('updateChart', {
-          refId: this.refId,
-          startTime
-        });
+        this.$store.commit(`${this.mod}/SET_START_TIME`, currentTime);
       }
     },
     endTime: {
       get() {
-        return this.$store.state.charts[this.refId].endTime;
+        return this.$store.state[this.mod].endTime;
       },
       set(endTime) {
-        this.$store.commit('updateChart', {
-          refId: this.refId,
-          endTime
-        });
+        this.$store.commit(`${this.mod}/SET_END_TIME`, endTime);
       }
     },
     currentTime: {
       get() {
-        return this.$store.state.charts[this.refId].currentTime;
+        return this.$store.state[this.mod].currentTime;
       },
       set(currentTime) {
-        this.$store.commit('updateChart', {
-          refId: this.refId,
-          currentTime
-        });
+        this.$store.dispatch(`${this.mod}/updateCurrentTime`, currentTime);
       }
     },
     ...mapState({
-      chart(state) {
-        return state.charts[this.refId].chart;
+      service(state) {
+        return state[this.mod].service;
       },
       options: state => state.options
     })
   },
   mounted() {
     this.currentTime = dateToTime(this.experiment.beginTime);
-    this.chart.addOnZoomListener((startDate, endDate) => {
+    this.service.addOnZoomListener((startDate, endDate) => {
       this.startTime = dateToTime(startDate);
       this.endTime = dateToTime(endDate);
     });
-    this.chart.addOnDateListener(date => {
+    this.service.addOnDateListener(date => {
       this.currentTime = dateToTime(date);
     });
   },
   methods: {
     onTimeChange(e) {
-      if (!this.chart) {
+      if (!this.service) {
         return;
       }
       if (e.keyCode === undefined || e.keyCode === 13) {
@@ -144,7 +135,7 @@ export default {
         this.startTime = dateToTime(startDate);
         this.endTime = dateToTime(endDate);
         this.currentTime = dateToTime(currentDate);
-        this.chart.zoom(startDate, endDate);
+        this.service.zoom(startDate, endDate);
       }
     },
     validateDate(date) {

@@ -49,10 +49,16 @@
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex';
+
 export default {
   props: {
-    refId: {
-      type: Number,
+    mod: {
+      type: String,
+      required: true
+    },
+    experiment: {
+      type: String,
       required: true
     }
   },
@@ -62,12 +68,19 @@ export default {
     };
   },
   computed: {
-    chart() {
-      return this.$store.state.charts[this.refId].chart;
-    },
-    selectedMeasures() {
-      return this.$store.state.charts[this.refId].selectedMeasures;
-    }
+    ...mapState({
+      service(state) {
+        return state[this.mod].service;
+      },
+      selectedMeasures(state) {
+        return state[this.mod].measures;
+      }
+    }),
+    ...mapGetters({
+      selectedMeasuresValues(getters) {
+        return getters[this.mod].measures;
+      }
+    })
   },
   subscriptions() {
     return {
@@ -76,13 +89,11 @@ export default {
   },
   methods: {
     onShowMeasures() {
-      if (this.measures.length < 1) {
-        this.$db.fetchMeasures(this.$route.params.id);
-      }
+      this.$db.fetchMeasures(this.experiment.id);
       this.tmpMeasures = Object.values(this.selectedMeasures);
     },
     onMeasurePageChange(page) {
-      this.$db.fetchMeasures(this.$route.params.id, page);
+      this.$db.fetchMeasures(this.experiment.id, page);
     },
     onClickAddMeasure(measure) {
       this.tmpMeasures.push(measure);
@@ -98,7 +109,7 @@ export default {
         if (!former[tmp.id]) {
           selectedMeasures[tmp.id] = tmp;
           const samples = await this.$db.fetchSamples(tmp.id);
-          this.chart.addMeasure(tmp, samples);
+          this.service.addMeasure(tmp, samples);
         } else {
           selectedMeasures[tmp.id] = former[tmp.id];
           delete former[tmp.id];
@@ -106,12 +117,11 @@ export default {
       }
       
       for (let remove of Object.values(former)) {
-        this.chart.removeMeasure(remove);
+        this.service.removeMeasure(remove);
       }
 
-      this.$store.commit('updateChart', { refId: this.refId, selectedMeasures });
-      this.$store.commit('updateTimelineValues', { refId: this.refId });
-      this.$db.fetchModifications(this.$route.params.id);
+      this.$store.dispatch(`${this.mod}/updateMeasures`, selectedMeasures);
+      this.$db.fetchModifications(this.experiment.id);
     }
   }
 };

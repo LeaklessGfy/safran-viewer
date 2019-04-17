@@ -339,7 +339,7 @@ export default class ChartService {
     const range = this._ranges[id];
 
     if (!range) {
-      return
+      return;
     }
 
     const series = this._measuresSeries[range.dummyData];

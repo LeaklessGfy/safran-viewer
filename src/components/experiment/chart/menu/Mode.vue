@@ -27,8 +27,8 @@ import { mapState } from 'vuex';
 
 export default {
   props: {
-    refId: {
-      type: Number,
+    mod: {
+      type: String,
       required: true
     }
   },
@@ -51,18 +51,18 @@ export default {
       }
     },
     ...mapState({
-      chart(state) {
-        return state.charts[this.refId].chart;
+      service(state) {
+        return state[this.mod].service;
       }
     })
   },
   mounted() {
-    this.chart.changeMode(this.mode);
+    this.service.changeMode(this.mode);
   },
   methods: {
     onClickMode(mode) {
       this.mode = mode;
-      this.chart.changeMode(mode);
+      this.service.changeMode(mode);
     }
   }
 }

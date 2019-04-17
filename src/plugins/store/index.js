@@ -4,51 +4,48 @@ import { timeToDate } from '@/services/date';
 
 Vue.use(Vuex);
 
-const measures = (state, refId) => Object.values(state.charts[refId].selectedMeasures);
-
-export const store = new Vuex.Store({
+const createChartModule = () => ({
+  namespaced: true,
   state: {
-    charts: [
-      {
-        chart: null,
-        startTime: null,
-        endTime: null,
-        currentTime: null,
-        selectedMeasures: {},
-        timelineValues: [],
-        modification: {
-          measure: null,
-          startTime: null,
-          endTime: null,
-          operation: 'ADD',
-          value: 0,
-          isApply: false,
-          actions: null
-        },
-        modifications: []
-      }
-    ],
-    options: {
-      blocks: [2, 2, 2, 4],
-      delimiters: [':', ':', '.'],
-      numericOnly: true,
-      numeralPositiveOnly: true,
-      stripLeadingZeroes: false
-    }
+    service: null,
+    startTime: null,
+    endTime: null,
+    currentTime: null,
+    measures: {},
+    timeline: [],
+    modification: {
+      measure: null,
+      startTime: null,
+      endTime: null,
+      operation: 'ADD',
+      value: 0,
+      isApply: false,
+      isLoad: false,
+      actions: null
+    },
+    modifications: []
   },
   mutations: {
-    updateChart(state, payload) {
-      for (let key of Object.keys(payload)) {
-        if (key === 'refId') continue;
-        state.charts[payload.refId][key] = payload[key];
-      }
+    SET_SERVICE(state, service) {
+      state.service = service;
     },
-    updateTimelineValues(state, payload) {
-      const chart = state.charts[payload.refId];
-      const date = payload.date ? payload.date : timeToDate(chart.currentTime);
+    SET_START_TIME(state, startTime) {
+      state.startTime = startTime;
+    },
+    SET_END_TIME(state, endTime) {
+      state.endTime = endTime;
+    },
+    SET_CURRENT_TIME(state, currentTIme) {
+      state.currentTIme = currentTIme;
+    },
+    SET_MEASURES(state, measures) {
+      state.measures = measures;
+    },
+    UPDATE_TIMELINE(state, date) {
+      date = date ? date : timeToDate(state.currentTime);
 
-      chart.timelineValues = measures(state, payload.refId).map(measure => {
-        const data = chart.chart.getMeasureData(measure, date);
+      state.timeline = Object.values(state.measures).map(measure => {
+        const data = state.service.getMeasureData(measure, date);
         return {
           measure: measure.name,
           type: measure.type,
@@ -57,12 +54,38 @@ export const store = new Vuex.Store({
         };
       });
     },
-    addSelectedMeasure(state, { refId, measure }) {
-      state.charts[refId].selectedMeasures[measure.id] = measure;
+    SET_MODIFICATIONS(state, modifications) {
+      state.modifications = modifications;
     }
   },
-  actions: {},
+  actions: {
+    updateMeasures({ commit }, measures) {
+      commit("SET_MEASURES", measures);
+      commit("UPDATE_TIMELINE");
+    },
+    updateCurrentTime({ commit }, currentTime) {
+      commit("SET_CURRENT_TIME", currentTime);
+      commit("UPDATE_TIMELINE");
+    }
+  },
   getters: {
-    measures: state => refId => measures(state, refId)
+    measures: state => Object.values(state.measures),
+    measuresId: (_, getters) => getters.measures.map(m => m.id)
   }
+});
+
+export const store = new Vuex.Store({
+  state: {
+    options: {
+      blocks: [2, 2, 2, 4],
+      delimiters: [':', ':', '.'],
+      numericOnly: true,
+      numeralPositiveOnly: true,
+      stripLeadingZeroes: false
+    }
+  },
+  modules: {
+    default: createChartModule()
+  },
+  strict: true
 });

@@ -1,19 +1,19 @@
 <template>
   <div>
     <chart-menu
-      v-if="chart"
-      :ref-id="refId"
+      v-if="service"
+      :mod="mod"
       :experiment="experiment"
     />
     
     <div
-      :ref="refName"
+      :ref="mod"
       class="chart"
     />
 
     <chart-tabs
-      v-if="chart"
-      :ref-id="refId"
+      v-if="service"
+      :mod="mod"
       :experiment="experiment"
     />
   </div>
@@ -21,7 +21,7 @@
 
 <script>
 import { mapState } from 'vuex';
-import ChartService from '../../services/chart';
+import ChartService from '@/services/chart';
 import Menu from './chart/Menu';
 import Tabs from './chart/Tabs';
 
@@ -31,13 +31,10 @@ export default {
     'chart-tabs': Tabs
   },
   props: {
-    refName: {
+    mod: {
       type: String,
-      required: true
-    },
-    refId: {
-      type: Number,
-      required: true
+      required: false,
+      default: "default"
     }
   },
   data() {
@@ -52,26 +49,26 @@ export default {
     }
   },
   computed: mapState({
-    chart(state) {
-      return state.charts[this.refId].chart;
+    service(state) {
+      return state[this.mod].service;
     }
   }),
   mounted() {
-    const chart = new ChartService(this.$refs[this.refName], this.experiment.beginTime, this.experiment.endTime);
+    const service = new ChartService(this.$refs[this.refName], this.experiment.beginTime, this.experiment.endTime);
 
     this.$db.fetchAlarms(this.experiment.id)
     .then(alarms => {
-      chart.addAlarms(alarms);
+      service.addAlarms(alarms);
     });
 
     this.sub = this.$db.getExperiment().subscribe(experiment => {
-      chart.rescale(experiment.beginTime, experiment.endTime);
+      service.rescale(experiment.beginTime, experiment.endTime);
     });
 
-    this.$store.commit('updateChart', { refId: this.refId, chart });
+    this.$store.commit(`${this.mod}/SET_SERVICE`, service);
   },
   beforeDestroy() {
-    this.chart.destroy();
+    this.service.destroy();
     this.sub.unsubscribe();
   }
 };

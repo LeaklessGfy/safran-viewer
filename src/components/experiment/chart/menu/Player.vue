@@ -30,8 +30,8 @@ import { timeToTimestamp } from '@/services/date';
 
 export default {
   props: {
-    refId: {
-      type: Number,
+    mod: {
+      type: String,
       required: true
     },
     experiment: {
@@ -47,11 +47,11 @@ export default {
   },
   computed: {
     ...mapState({
-      chart(state) {
-        return state.charts[this.refId].chart;
+      service(state) {
+        return state[this.mod].service;
       },
       currentTime(state) {
-        return state.charts[this.refId].currentTime;
+        return state[this.mod].currentTime;
       }
     })
   },
@@ -60,25 +60,25 @@ export default {
       this.state = 1;
       const speed = 100;
       const currentDate = timeToTimestamp(this.currentTime, this.experiment.beginTime);
-      this.chart.startTimeline(currentDate);
+      this.service.startTimeline(currentDate);
 
       this.interval = setInterval(() => {
         const newDate = this.chart.tickTimeline(speed);
         if (newDate.getTime() >= this.experiment.endTime) {
           clearInterval(this.interval);
-          this.chart.stopTimeline();
+          this.service.stopTimeline();
         }
       }, speed);
     },
     pauseTimeline() {
       this.state = 2;
       clearInterval(this.interval);
-      this.chart.pauseTimeline();
+      this.service.pauseTimeline();
     },
     stopTimeline() {
       this.state = 0;
       clearInterval(this.interval);
-      this.chart.stopTimeline();
+      this.service.stopTimeline();
     },
   }
 }

@@ -14,7 +14,7 @@
         <b-form-select
           v-model="modification.measure"
           class="mr-2"
-          :options="measures(refId).map(m => m.id)"
+          :options="measuresId"
           required
         />
 
@@ -128,8 +128,8 @@ import { dateToTime, timeToTimestamp } from '@/services/date';
 
 export default {
   props: {
-    refId: {
-      type: Number,
+    mod: {
+      type: String,
       required: true
     },
     experiment: {
@@ -139,23 +139,25 @@ export default {
   },
   computed: {
     ...mapState({
-      chart(state) {
-        return state.charts[this.refId].chart;
-      },
-      timelineValues(state) {
-        return state.charts[this.refId].timelineValues;
+      service(state) {
+        return state[this.mod].service;
       },
       selectedMeasures(state) {
-        return state.charts[this.refId].selectedMeasures;
+        return state[this.mod].selectedMeasures;
+      },
+      timeline(state) {
+        return state[this.mod].timeline;
       },
       modification(state) {
         return state.charts[this.refId].modification;
       },
       options: state => state.options
     }),
-    ...mapGetters([
-      'measures'
-    ])
+    ...mapGetters({
+      measuresId(getters) {
+        return getters[this.mod].measuresId;
+      }
+    })
   },
   subscriptions() {
     return {
