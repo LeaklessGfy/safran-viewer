@@ -4,6 +4,7 @@
       v-if="service"
       :mod="mod"
       :experiment="experiment"
+      :service="service"
     />
     
     <div
@@ -15,13 +16,13 @@
       v-if="service"
       :mod="mod"
       :experiment="experiment"
+      :service="service"
     />
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
-import ChartService from '@/services/chart';
+import ChartService, { ChartContext } from '@/services/chart';
 import Menu from './chart/Menu';
 import Tabs from './chart/Tabs';
 
@@ -34,41 +35,37 @@ export default {
     mod: {
       type: String,
       required: false,
-      default: "default"
+      default: 'default'
     }
   },
   data() {
     return {
+      service: null,
       sub: null,
-    }
+    };
   },
   subscriptions() {
     return {
       experiment: this.$db.getExperiment(),
       measures: this.$db.getMeasures()
-    }
+    };
   },
-  computed: mapState({
-    service(state) {
-      return state[this.mod].service;
-    }
-  }),
   mounted() {
-    const service = new ChartService(this.$refs[this.refName], this.experiment.beginTime, this.experiment.endTime);
+    this.service = new ChartService(this.$refs[this.mod], this.experiment.beginTime, this.experiment.endTime);
+    ChartContext[this.mod] = this.service;
 
     this.$db.fetchAlarms(this.experiment.id)
     .then(alarms => {
-      service.addAlarms(alarms);
+      this.service.addAlarms(alarms);
     });
 
     this.sub = this.$db.getExperiment().subscribe(experiment => {
-      service.rescale(experiment.beginTime, experiment.endTime);
+      this.service.rescale(experiment.beginTime, experiment.endTime);
     });
-
-    this.$store.commit(`${this.mod}/SET_SERVICE`, service);
   },
   beforeDestroy() {
     this.service.destroy();
+    delete ChartContext[this.mod];
     this.sub.unsubscribe();
   }
 };

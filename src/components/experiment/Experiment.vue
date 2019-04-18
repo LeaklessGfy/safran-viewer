@@ -33,7 +33,7 @@
 
 <script>
 import Chart from './Chart';
-import { dateToString } from '../../services/date';
+import { dateToString } from '@/services/date';
 
 export default {
   components: {

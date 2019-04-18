@@ -14,7 +14,6 @@ class DBHandler {
   _benchsSubject;
   _campaignsSubject;
   _measuresSubject;
-  _modificationsSubject;
 
   constructor() {
     /* SUBJECTS */
@@ -25,13 +24,11 @@ class DBHandler {
     this._benchsSubject = new BehaviorSubject([]);
     this._campaignsSubject = new BehaviorSubject([]);
     this._measuresSubject = new BehaviorSubject([]);
-    this._modificationsSubject = new BehaviorSubject([]);
 
     /* DB */
     this._local = new LocalDB(
       this._errorsSubject,
-      this._loadingSubject,
-      this._modificationsSubject
+      this._loadingSubject
     );
     this._remote = new RemoteDB(
       this._errorsSubject,
@@ -72,10 +69,6 @@ class DBHandler {
     return this._measuresSubject;
   }
 
-  getModifications() {
-    return this._modificationsSubject;
-  }
-
   getLocal() {
     return this._local;
   }
@@ -85,7 +78,7 @@ class DBHandler {
   }
 }
 
-const DB = new Proxy(new DBHandler(), {
+export const DB = new Proxy(new DBHandler(), {
   get: function(target, name) {
     if (target[name]) {
       return target[name];

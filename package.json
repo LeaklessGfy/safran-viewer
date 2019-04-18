@@ -46,7 +46,8 @@
       "eslint:recommended"
     ],
     "rules": {
-      "semi": ["error", "always"]
+      "semi": ["error", "always"],
+      "quotes": ["error", "single"]
     },
     "parserOptions": {
       "parser": "babel-eslint"

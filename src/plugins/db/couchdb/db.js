@@ -1,6 +1,7 @@
 import PouchDB from 'pouchdb';
 import uuidv4 from 'uuid/v4';
 import { DESIGNS, DESIGNS_MAPPER } from './schema';
+import { timeToTimestamp } from '@/services/date';
 
 const DATABASE_NAME = 'safran_db';
 
@@ -10,58 +11,62 @@ export default class Database {
   /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
-  _modificationsSubject;
-  _protocolsSubject;
 
-  constructor(errors, loading, modifications, protocols) {
+  constructor(errors, loading) {
     this._errorsSubject = errors;
     this._loadingSubject = loading;
-    this._modificationsSubject = modifications;
-    this._protocolsSubject = protocols;
     this.install();
   }
 
   fetchModifications(experimentId) {
     this._loadingSubject.next(true);
-    this._db.query('modifications/findByExperiment', {
+    return this._db.query('modifications/findByExperiment', {
       key: experimentId,
       include_docs: true
     })
     .then(values => {
-      const result = values.rows.map(({ doc }) => ({
-        measure: doc.measure,
-        startTime: doc.startTime,
-        endTime: doc.endTime,
-        operation: doc.operation,
-        value: doc.value,
-        isApply: doc.isApply,
-        actions: doc.actions
-      }));
-      this._modificationsSubject.next(result);
+      return values.rows.map(row => row.doc);
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._modificationsSubject.next([]);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._modificationsSubject;
   }
 
-  fetchProtocols() {
-
-  }
-
-  insertModification(experimentId, modification) {
+  insertModification(modification) {
     const doc = {
-      ...modification,
       id: uuidv4(),
-      experimentId,
-      typeX: 'modification'
+      typeX: 'modification',
+      experimentId: modification.experimentId,
+      measure: modification.measure,
+      startDate: timeToTimestamp(modification.startTime, this.experiment.beginTime),
+      endDate: timeToTimestamp(modification.endTime, this.experiment.endTime),
+      operation: modification.operation,
+      value: parseInt(modification.value, 10),
+      isApply: false,
+      isLoad: false
     };
-    this._insertDoc(doc)
-    .then(() => this.fetchModifications(experimentId));
+    return this._insertDoc(doc)
+    .then(() => {
+      return doc;
+    });
+  }
+
+  removeModification(modification) {
+   return this._db.remove(modification)
+   .then(result => {
+     if (!result.ok) {
+       throw new Error('Error while removing');
+     }
+     return result;
+   })
+   .catch(err => {
+     this._errorsSubject.next(err);
+     throw err;
+   });
   }
 
   insertProtocols(protocols) {

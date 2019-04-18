@@ -37,6 +37,10 @@ export default {
     experiment: {
       type: Object,
       required: true
+    },
+    service: {
+      type: Object,
+      required: true
     }
   },
   data() {
@@ -47,9 +51,6 @@ export default {
   },
   computed: {
     ...mapState({
-      service(state) {
-        return state[this.mod].service;
-      },
       currentTime(state) {
         return state[this.mod].currentTime;
       }
@@ -81,6 +82,6 @@ export default {
       this.service.stopTimeline();
     },
   }
-}
+};
 </script>
 

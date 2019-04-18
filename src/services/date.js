@@ -30,7 +30,7 @@ export const timeToDate = (time, date) => {
     secs = timeSplit.length > 2 ? timeSplit[2] : secs;
     const secSplit = secs.split(',');
     millis = secSplit.length > 1 ? secSplit[1] : millis;
-  } else {
+  } else if (timeSplit.length > 1) {
     mins = timeSplit.length > 0 ? timeSplit[0] : mins;
     secs = timeSplit.length > 1 ? timeSplit[1] : secs;
     const secSplit = secs.split(',');

@@ -23,12 +23,14 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
-
 export default {
   props: {
     mod: {
       type: String,
+      required: true
+    },
+    service: {
+      type: Object,
       required: true
     }
   },
@@ -49,12 +51,7 @@ export default {
         default:
           return 'search';
       }
-    },
-    ...mapState({
-      service(state) {
-        return state[this.mod].service;
-      }
-    })
+    }
   },
   mounted() {
     this.service.changeMode(this.mode);
@@ -65,6 +62,6 @@ export default {
       this.service.changeMode(mode);
     }
   }
-}
+};
 </script>
 

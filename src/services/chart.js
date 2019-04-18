@@ -6,7 +6,7 @@ import { dateToTime } from './date';
 
 am4core.useTheme(am4themes_animated);
 
-const TimeTooltip = `<center><strong>{legend}</strong></center>`;
+const TimeTooltip = '<center><strong>{legend}</strong></center>';
 
 const AlarmTooltip = `<center><strong>{name}</strong></center>
 <table>
@@ -14,7 +14,9 @@ const AlarmTooltip = `<center><strong>{name}</strong></center>
 <tr><th align="left">Message</th><td>{message}</td></tr>
 </table>`;
 
-const MeasureTooltip = `<center><strong>{name}</strong><br><b>{valueY}&nbsp;{unit}</b></center>`;
+const MeasureTooltip = '<center><strong>{name}</strong><br><b>{valueY}&nbsp;{unit}</b></center>';
+
+export const ChartContext = {};
 
 export default class ChartService {
   _date;

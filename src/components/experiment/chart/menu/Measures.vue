@@ -58,7 +58,11 @@ export default {
       required: true
     },
     experiment: {
-      type: String,
+      type: Object,
+      required: true
+    },
+    service: {
+      type: Object,
       required: true
     }
   },
@@ -69,9 +73,6 @@ export default {
   },
   computed: {
     ...mapState({
-      service(state) {
-        return state[this.mod].service;
-      },
       selectedMeasures(state) {
         return state[this.mod].measures;
       }

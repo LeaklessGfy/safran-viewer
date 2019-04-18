@@ -15,8 +15,16 @@
 
     <!-- MENU -->
     <b-col cols="3">
-      <chart-menu-measures :mod="mod" :experiment="experiment" />
-      <chart-menu-mode :mod="mod" :experiment="experiment" />
+      <chart-menu-measures
+        :mod="mod"
+        :experiment="experiment"
+        :service="service"
+      />
+      <chart-menu-mode
+        :mod="mod"
+        :experiment="experiment"
+        :service="service"
+      />
     </b-col>
 
     <b-col cols="3">
@@ -24,6 +32,7 @@
         class="text-center"
         :mod="mod"
         :experiment="experiment"
+        :service="service"
       />
     </b-col>
 
@@ -75,6 +84,10 @@ export default {
     experiment: {
       type: Object,
       required: true
+    },
+    service: {
+      type: Object,
+      required: true
     }
   },
   computed: {
@@ -83,7 +96,7 @@ export default {
         return this.$store.state[this.mod].startTime;
       },
       set(startTime) {
-        this.$store.commit(`${this.mod}/SET_START_TIME`, currentTime);
+        this.$store.commit(`${this.mod}/SET_START_TIME`, startTime);
       }
     },
     endTime: {
@@ -103,9 +116,6 @@ export default {
       }
     },
     ...mapState({
-      service(state) {
-        return state[this.mod].service;
-      },
       options: state => state.options
     })
   },
@@ -147,6 +157,6 @@ export default {
       return date;
     }
   }
-}
+};
 </script>
 
