@@ -5,7 +5,7 @@
     <b-list-group class="mt-3">
       <b-list-group-item 
         v-for="experiment in experiments"
-        v-bind:key="experiment.id"
+        :key="experiment.id"
         :href="'#/experiment/' + experiment.id"
         class="d-flex justify-content-between align-items-center"
       >
@@ -14,8 +14,11 @@
             {{ experiment.isLocal ? "LOCAL" : "REMOTE" }}
           </b-badge>
         </div>
-        <b-button variant="danger" @click="e => onClickDelete(e, experiment)">
-          <v-icon name="trash"/>
+        <b-button
+          variant="danger"
+          @click="e => onClickDelete(e, experiment)"
+        >
+          <v-icon name="trash" />
         </b-button>
       </b-list-group-item>
     </b-list-group>
@@ -24,10 +27,10 @@
       v-model="experiments.current"
       :total-rows="experiments.total"
       :per-page="experiments.limit"
-      @change="onPageChange"
       size="md"
       class="mt-3"
       align="center"
+      @change="onPageChange"
     />
 
     <b-modal
@@ -35,12 +38,14 @@
       title="Supprimer"
       header-bg-variant="danger"
       header-text-variant="light"
-      @ok="onConfirmDelete"
       ok-variant="danger"
       ok-title="Supprimer"
       size="xl"
+      @ok="onConfirmDelete"
     >
-      <p class="my-4">Êtes-vous sur de vouloir supprimer cet experiment ?</p>
+      <p class="my-4">
+        Êtes-vous sur de vouloir supprimer cet experiment ?
+      </p>
     </b-modal>
   </b-container>
 </template>
@@ -50,31 +55,35 @@ export default {
   data() {
     return {
       show: false,
-      experiment: null
+      del: null
+    };
+  },
+  computed: {
+    experiments() {
+      return this.$store.state.experiments;
     }
   },
-  subscriptions() {
-    return {
-      experiments: this.$db.fetchExperiments()
-    }
+  mounted() {
+    this.$store.dispatch('fetchExperiments');
   },
   methods: {
     onPageChange(page) {
-      this.$db.fetchExperiments(page);
+      this.$store.dispatch('fetchExperiments', page);
     },
-    onClickDelete(e, experiment) {
+    onClickDelete(e, del) {
       e.preventDefault();
-      if (experiment) {
-        this.experiment = experiment;
+      if (del) {
+        this.del = del;
         this.show = true;
       }
     },
     async onConfirmDelete() {
-      if (this.experiment) {
-        await this.$db.removeExperiment(this.experiment.id);
+      if (this.del) {
+        await this.$db.removeExperiment(this.del.id);
       }
-      this.$db.fetchExperiments(this.experiments.current);
+      this.$store.dispatch('fetchExperiments', this.experiments.current);
       this.show = false;
+      this.del = null;
     }
   }
 };

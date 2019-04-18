@@ -61,10 +61,6 @@ export default {
       type: String,
       required: true
     },
-    experiment: {
-      type: Object,
-      required: true
-    },
     service: {
       type: Object,
       required: true
@@ -85,6 +81,9 @@ export default {
     };
   },
   computed: {
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    },
     modifications() {
       return this.$store.state[this.mod].modifications;
     }

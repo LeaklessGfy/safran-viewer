@@ -49,16 +49,10 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from 'vuex';
-
 export default {
   props: {
     mod: {
       type: String,
-      required: true
-    },
-    experiment: {
-      type: Object,
       required: true
     },
     service: {
@@ -72,16 +66,15 @@ export default {
     };
   },
   computed: {
-    ...mapState({
-      selectedMeasures(state) {
-        return state[this.mod].measures;
-      }
-    }),
-    ...mapGetters({
-      selectedMeasuresValues(getters) {
-        return getters[this.mod].measures;
-      }
-    })
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    },
+    selectedMeasures() {
+      return this.$store.state[this.mod].measures;
+    },
+    selectedMeasuresValues() {
+      return this.$store.getters[this.mod + '/measures'];
+    }
   },
   subscriptions() {
     return {

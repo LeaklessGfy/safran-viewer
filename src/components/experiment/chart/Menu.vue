@@ -5,7 +5,7 @@
       <cleave
         v-model="startTime"
         class="form-control mt-2"
-        placeholder="hh:mm:ss,ssss"
+        placeholder="hh:mm:ss:sss"
         :options="options"
         :raw="false"
         @blur.native="onTimeChange"
@@ -17,12 +17,10 @@
     <b-col cols="3">
       <chart-menu-measures
         :mod="mod"
-        :experiment="experiment"
         :service="service"
       />
       <chart-menu-mode
         :mod="mod"
-        :experiment="experiment"
         :service="service"
       />
     </b-col>
@@ -31,7 +29,6 @@
       <chart-menu-player
         class="text-center"
         :mod="mod"
-        :experiment="experiment"
         :service="service"
       />
     </b-col>
@@ -40,7 +37,7 @@
       <cleave
         v-model="currentTime"
         class="form-control mt-2"
-        placeholder="hh:mm:ss,ssss"
+        placeholder="hh:mm:ss:sss"
         :options="options"
         :raw="false"
         @blur.native="onTimeChange"
@@ -53,7 +50,7 @@
       <cleave
         v-model="endTime"
         class="form-control mt-2"
-        placeholder="hh:mm:ss,ssss"
+        placeholder="hh:mm:ss:sss"
         :options="options"
         :raw="false"
         @blur.native="onTimeChange"
@@ -81,16 +78,15 @@ export default {
       type: String,
       required: true
     },
-    experiment: {
-      type: Object,
-      required: true
-    },
     service: {
       type: Object,
       required: true
     }
   },
   computed: {
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    },
     startTime: {
       get() {
         return this.$store.state[this.mod].startTime;
@@ -120,7 +116,6 @@ export default {
     })
   },
   mounted() {
-    this.currentTime = dateToTime(this.experiment.beginTime);
     this.service.addOnZoomListener((startDate, endDate) => {
       this.startTime = dateToTime(startDate);
       this.endTime = dateToTime(endDate);

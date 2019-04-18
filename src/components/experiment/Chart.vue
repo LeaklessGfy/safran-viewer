@@ -3,7 +3,6 @@
     <chart-menu
       v-if="service"
       :mod="mod"
-      :experiment="experiment"
       :service="service"
     />
     
@@ -15,7 +14,6 @@
     <chart-tabs
       v-if="service"
       :mod="mod"
-      :experiment="experiment"
       :service="service"
     />
   </div>
@@ -40,15 +38,18 @@ export default {
   },
   data() {
     return {
-      service: null,
-      sub: null,
+      service: null
     };
   },
   subscriptions() {
     return {
-      experiment: this.$db.getExperiment(),
       measures: this.$db.getMeasures()
     };
+  },
+  computed: {
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    }
   },
   mounted() {
     this.service = new ChartService(this.$refs[this.mod], this.experiment.beginTime, this.experiment.endTime);
@@ -58,15 +59,10 @@ export default {
     .then(alarms => {
       this.service.addAlarms(alarms);
     });
-
-    this.sub = this.$db.getExperiment().subscribe(experiment => {
-      this.service.rescale(experiment.beginTime, experiment.endTime);
-    });
   },
   beforeDestroy() {
     this.service.destroy();
     delete ChartContext[this.mod];
-    this.sub.unsubscribe();
   }
 };
 </script>

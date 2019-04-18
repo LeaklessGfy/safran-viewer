@@ -36,14 +36,14 @@ export default class Database {
     });
   }
 
-  insertModification(modification) {
+  insertModification(modification, experiment) {
     const doc = {
       id: uuidv4(),
       typeX: 'modification',
       experimentId: modification.experimentId,
       measure: modification.measure,
-      startDate: timeToTimestamp(modification.startTime, this.experiment.beginTime),
-      endDate: timeToTimestamp(modification.endTime, this.experiment.endTime),
+      startDate: timeToTimestamp(modification.startTime, experiment.beginTime),
+      endDate: timeToTimestamp(modification.endTime, experiment.endTime),
       operation: modification.operation,
       value: parseInt(modification.value, 10),
       isApply: false,

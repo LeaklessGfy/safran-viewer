@@ -7,12 +7,10 @@
     >
       <modification
         :mod="mod"
-        :experiment="experiment"
         :service="service"
       />
       <modifications
         :mod="mod"
-        :experiment="experiment"
         :service="service"
       />
     </b-tab>
@@ -40,10 +38,6 @@ export default {
   props: {
     mod: {
       type: String,
-      required: true
-    },
-    experiment: {
-      type: Object,
       required: true
     },
     service: {

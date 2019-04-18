@@ -25,17 +25,12 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
 import { timeToTimestamp } from '@/services/date';
 
 export default {
   props: {
     mod: {
       type: String,
-      required: true
-    },
-    experiment: {
-      type: Object,
       required: true
     },
     service: {
@@ -50,11 +45,12 @@ export default {
     };
   },
   computed: {
-    ...mapState({
-      currentTime(state) {
-        return state[this.mod].currentTime;
-      }
-    })
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    },
+    currentTime() {
+      return this.$store.state[this.mod].currentTime;
+    }
   },
   methods: {
     startTimeline() {

@@ -15,7 +15,7 @@
       v-model="modification.startTime"
       :options="options"
       class="form-control mr-2"
-      placeholder="hh:mm:ss,ssss"
+      placeholder="hh:mm:ss:sss"
       :raw="false"
       required
     />
@@ -37,7 +37,7 @@
       v-model="modification.endTime"
       :options="options"
       class="form-control mr-2"
-      placeholder="hh:mm:ss,ssss"
+      placeholder="hh:mm:ss:sss"
       :raw="false"
       required
     />
@@ -60,10 +60,6 @@ export default {
       type: String,
       required: true
     },
-    experiment: {
-      type: Object,
-      required: true
-    },
     service: {
       type: Object,
       required: true
@@ -72,7 +68,7 @@ export default {
   data() {
     return {
       modification: {
-        experimentId: this.experiment.id,
+        experimentId: null,
         measure: null,
         startTime: null,
         endTime: null,
@@ -82,11 +78,14 @@ export default {
     };
   },
   computed: {
-    options() {
-      return this.$store.state.options;
+    experiment() {
+      return this.$store.state[this.mod].experiment;
     },
     measuresId() {
       return this.$store.getters[this.mod + '/measuresId'];
+    },
+    options() {
+      return this.$store.state.options;
     }
   },
   mounted() {
@@ -98,6 +97,7 @@ export default {
   methods: {
     onSubmitModification(e) {
       e.preventDefault();
+      this.modification.experimentId = this.experiment.id;
       this.$store.dispatch(`${this.mod}/insertModification`, this.modification);
     }
   }

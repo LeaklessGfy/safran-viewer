@@ -1,12 +1,12 @@
-import { parse, format, getTime } from 'date-fns';
+import { parse, format, getTime, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
 
-export const dateToString = date => format(date, 'DD/MM/YYYY HH:mm:ss:SSSS');
+export const dateToString = date => format(date, 'DD/MM/YYYY HH:mm:ss:SSS');
 
 export const dateToTimestamp = date => getTime(date);
 
 export const stringToDate = str => parse(str);
 
-export const dateToTime = date => format(date, 'HH:mm:ss:SSSS');
+export const dateToTime = date => format(date, 'HH:mm:ss:SSS');
 
 export const timeToTimestamp = (time, date) => {
   const build = timeToDate(time, date);
@@ -14,6 +14,9 @@ export const timeToTimestamp = (time, date) => {
 };
 
 export const timeToDate = (time, date) => {
+  if (!date) {
+    throw new Error('Undefined date');
+  }
   if (!(date instanceof Date)) {
     date = stringToDate(date);
   }
@@ -24,24 +27,20 @@ export const timeToDate = (time, date) => {
     secs = date.getSeconds(),
     millis = date.getMilliseconds();
 
-  if (timeSplit.length > 2) {
-    hours = timeSplit.length > 0 ? timeSplit[0] : hours;
-    mins = timeSplit.length > 1 ? timeSplit[1] : mins;
-    secs = timeSplit.length > 2 ? timeSplit[2] : secs;
-    const secSplit = secs.split(',');
-    millis = secSplit.length > 1 ? secSplit[1] : millis;
-  } else if (timeSplit.length > 1) {
-    mins = timeSplit.length > 0 ? timeSplit[0] : mins;
-    secs = timeSplit.length > 1 ? timeSplit[1] : secs;
-    const secSplit = secs.split(',');
-    millis = secSplit.length > 1 ? secSplit[1] : millis;
+  if (timeSplit.length > 3) {
+    hours = timeSplit[0];
+    mins = timeSplit[1];
+    secs = timeSplit[2];
+    millis = timeSplit[3];
+  } else {
+    throw new Error('Error while parsing');
   }
 
-  const build = new Date(date);
-  build.setHours(parseInt(hours, 10));
-  build.setMinutes(parseInt(mins, 10));
-  build.setSeconds(parseInt(secs, 10));
-  build.setMilliseconds(parseInt(millis, 10));
+  let build = new Date(date);
+  build = setHours(build, parseInt(hours, 10));
+  build = setMinutes(build, parseInt(mins, 10));
+  build = setSeconds(build, parseInt(secs, 10));
+  build = setMilliseconds(build, parseInt(millis, 10)); // TODO: Find a fix for 4 digit millis
 
   return build;
 };

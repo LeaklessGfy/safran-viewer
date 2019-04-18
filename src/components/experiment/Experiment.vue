@@ -1,5 +1,6 @@
 <template>
   <b-container
+    v-if="experiment"
     fluid
     class="mb-5"
   >
@@ -25,7 +26,8 @@
     </b-collapse>
 
     <chart
-      v-if="experiment.id"
+      v-if="experiment"
+      :mod="mod"
       class="mt-2"
     />
   </b-container>
@@ -41,6 +43,7 @@ export default {
   },
   data() {
     return {
+      mod: 'default',
       fields: [
         'id',
         'name',
@@ -53,10 +56,13 @@ export default {
       ]
     };
   },
-  subscriptions() {
-    return {
-      experiment: this.$db.fetchExperiment(this.$route.params.id)
-    };
+  computed: {
+    experiment() {
+      return this.$store.state[this.mod].experiment;
+    }
+  },
+  mounted() {
+    this.$store.dispatch(`${this.mod}/fetchExperiment`, this.$route.params.id);
   },
   methods: {
     dateToString

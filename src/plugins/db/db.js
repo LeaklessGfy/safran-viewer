@@ -9,8 +9,6 @@ class DBHandler {
   /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
-  _experimentSubject;
-  _experimentsSubject;
   _benchsSubject;
   _campaignsSubject;
   _measuresSubject;
@@ -19,8 +17,6 @@ class DBHandler {
     /* SUBJECTS */
     this._errorsSubject = new Subject();
     this._loadingSubject = new BehaviorSubject(false);
-    this._experimentSubject = new BehaviorSubject({});
-    this._experimentsSubject = new BehaviorSubject([]);
     this._benchsSubject = new BehaviorSubject([]);
     this._campaignsSubject = new BehaviorSubject([]);
     this._measuresSubject = new BehaviorSubject([]);
@@ -33,8 +29,6 @@ class DBHandler {
     this._remote = new RemoteDB(
       this._errorsSubject,
       this._loadingSubject,
-      this._experimentSubject,
-      this._experimentsSubject,
       this._benchsSubject,
       this._campaignsSubject,
       this._measuresSubject
@@ -47,14 +41,6 @@ class DBHandler {
 
   getLoading() {
     return this._loadingSubject;
-  }
-
-  getExperiment() {
-    return this._experimentSubject;
-  }
-
-  getExperiments() {
-    return this._experimentsSubject;
   }
 
   getBenchs() {

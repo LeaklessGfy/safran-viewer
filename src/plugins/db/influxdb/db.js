@@ -14,14 +14,12 @@ export default class Database {
   /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
-  _experimentSubject;
-  _experimentsSubject;
   _benchsSubject;
   _campaignsSubject;
   _measuresSubject;
 
   constructor(
-    errors, loading, experiment, experiments,
+    errors, loading,
     benchs, campaigns, measures
   ) {
     this._host = 'localhost';
@@ -30,8 +28,6 @@ export default class Database {
 
     this._errorsSubject = errors;
     this._loadingSubject = loading;
-    this._experimentSubject = experiment;
-    this._experimentsSubject = experiments;
     this._benchsSubject = benchs;
     this._campaignsSubject = campaigns;
     this._measuresSubject = measures;
@@ -62,26 +58,25 @@ export default class Database {
 
   fetchExperiment(id) {
     this._loadingSubject.next(true);
-    this._db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
+    return this._db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
     .then(result => {
       if (result.length < 1) {
         throw new Error('Experiment not found with id ' + id);
       }
-      this._experimentSubject.next(result[0]);
+      return result[0];
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._experimentSubject.next({});
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._experimentSubject;
   }
 
   fetchExperiments(page = 1) {
     this._loadingSubject.next(true);
-    Promise.all([
+    return Promise.all([
       this._db.query(`SELECT * FROM experiments LIMIT ${this._limit} OFFSET ${(page - 1) * this._limit};`),
       this._db.query('SELECT count("name") FROM experiments;')
     ])
@@ -90,16 +85,15 @@ export default class Database {
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
       result.limit = this._limit;
-      this._experimentsSubject.next(result);
+      return result;
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._experimentsSubject.next([]);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._experimentsSubject;
   }
 
   fetchBenchs() {

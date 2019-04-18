@@ -1,15 +1,16 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { timeToDate } from '@/services/date';
+import { dateToTime, timeToDate } from '@/services/date';
 import { ChartContext } from '@/services/chart';
 import { DB } from '@/plugins/db/db';
 
 Vue.use(Vuex);
 
-const createChartModule = (mod) => ({
+const createChartModule = mod => ({
   namespaced: true,
   state: {
     mod,
+    experiment: null,
     startTime: null,
     endTime: null,
     currentTime: null,
@@ -18,6 +19,10 @@ const createChartModule = (mod) => ({
     modifications: []
   },
   mutations: {
+    SET_EXPERIMENT(state, experiment) {
+      state.experiment = experiment;
+      state.currentTime = dateToTime(experiment.beginTime);
+    },
     SET_START_TIME(state, startTime) {
       state.startTime = startTime;
     },
@@ -31,8 +36,8 @@ const createChartModule = (mod) => ({
       state.measures = measures;
     },
     UPDATE_TIMELINE(state, date) {
-      if (!date) {
-        date = timeToDate(state.currentTime);
+      if (!date && state.currentTime) {
+        date = timeToDate(state.currentTime, state.experiment.beginTime);
       }
 
       state.timeline = Object.values(state.measures).map(measure => {
@@ -56,7 +61,7 @@ const createChartModule = (mod) => ({
     },
     ADD_MODIFICATION(state, modification) {
       modification.isLoad = state.measures[modification.measure] ? true : false;
-      state.modification.push(modification);
+      state.modifications.push(modification);
     },
     TOGGLE_MODIFICATION(state, modification) {
       state.modifications = state.modifications.map(m => {
@@ -66,6 +71,12 @@ const createChartModule = (mod) => ({
     }
   },
   actions: {
+    fetchExperiment({ commit }, id) {
+      DB.fetchExperiment(id)
+      .then(experiment => {
+        commit('SET_EXPERIMENT', experiment);
+      });
+    },
     updateCurrentTime({ commit }, currentTime) {
       commit('SET_CURRENT_TIME', currentTime);
       commit('UPDATE_TIMELINE');
@@ -80,8 +91,8 @@ const createChartModule = (mod) => ({
       commit('UPDATE_TIMELINE');
       commit('UPDATE_MODIFICATIONS');
     },
-    insertModification({ commit }, modification) {
-      DB.insertModification(modification)
+    insertModification({ state, commit }, modification) {
+      DB.insertModification(modification, state.experiment)
       .then(modification => {
         commit('ADD_MODIFICATION', modification);
       });
@@ -107,17 +118,31 @@ const createChartModule = (mod) => ({
 });
 
 export const store = new Vuex.Store({
+  strict: true,
   state: {
+    experiments: [],
     options: {
-      blocks: [2, 2, 2, 4],
-      delimiters: [':', ':', '.'],
+      blocks: [2, 2, 2, 3],
+      delimiters: [':', ':', ':'],
       numericOnly: true,
       numeralPositiveOnly: true,
       stripLeadingZeroes: false
     }
   },
-  modules: {
-    default: createChartModule()
+  mutations: {
+    SET_EXPERIMENTS(state, experiments) {
+      state.experiments = experiments;
+    }
   },
-  strict: true
+  actions: {
+    fetchExperiments({ commit }, page = 1) {
+      DB.fetchExperiments(page)
+      .then(experiments => {
+        commit('SET_EXPERIMENTS', experiments);
+      });
+    }
+  },
+  modules: {
+    default: createChartModule('default')
+  }
 });
