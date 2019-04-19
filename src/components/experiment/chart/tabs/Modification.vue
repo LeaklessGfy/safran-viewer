@@ -88,6 +88,13 @@ export default {
       return this.$store.state.options;
     }
   },
+  watch: {
+    measuresId(newValue) {
+      if (newValue.length > 0 && this.modification.measure === null) {
+        this.modification.measure = newValue[0];
+      }
+    }
+  },
   mounted() {
     this.service.addOnSelectListener((startDate, endDate) => {
       this.modification.startTime = dateToTime(startDate);

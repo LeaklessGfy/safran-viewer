@@ -61,7 +61,6 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
 import { dateToTime, timeToTimestamp } from '@/services/date';
 import Measures from './menu/Measures';
 import Mode from './menu/Mode';
@@ -87,6 +86,9 @@ export default {
     experiment() {
       return this.$store.state[this.mod].experiment;
     },
+    options() {
+      return this.$store.state.options;
+    },
     startTime: {
       get() {
         return this.$store.state[this.mod].startTime;
@@ -110,16 +112,15 @@ export default {
       set(currentTime) {
         this.$store.dispatch(`${this.mod}/updateCurrentTime`, currentTime);
       }
-    },
-    ...mapState({
-      options: state => state.options
-    })
+    }
   },
   mounted() {
+    /*
     this.service.addOnZoomListener((startDate, endDate) => {
       this.startTime = dateToTime(startDate);
       this.endTime = dateToTime(endDate);
     });
+    */
     this.service.addOnDateListener(date => {
       this.currentTime = dateToTime(date);
     });

@@ -51,7 +51,9 @@ export default class Database {
     };
     return this._insertDoc(doc)
     .then(result => {
-      return Object.assign(doc, result);
+      doc._id = result.id;
+      doc._rev = result.rev;
+      return doc;
     });
   }
 

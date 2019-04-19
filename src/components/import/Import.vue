@@ -102,6 +102,7 @@
           :state="Boolean(experimentFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
+          required
         />
       </b-form-group>
 
@@ -182,8 +183,8 @@ export default {
       const experiment = {
         reference: this.reference,
         name: this.name,
-        bench: this.bench,
-        campaign: this.campaign,
+        bench: this.bench.name ? this.bench : JSON.parse(this.bench),
+        campaign: this.campaign.id12c ? this.campaign : JSON.parse(this.campaign),
         isLocal: false
       };
 
@@ -200,11 +201,14 @@ export default {
           title: 'Erreur',
           text: err
         }),
-        () => this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: 'Import réussi'
-        })
+        () => {
+          this.progress = 100;
+          this.$notify({
+            type: 'success',
+            title: 'Succès',
+            text: 'Import réussi'
+          });
+        }
       );
       service.import();
     },
