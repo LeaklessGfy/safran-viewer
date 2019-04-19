@@ -20,12 +20,14 @@ services:
       - "8083:8083"
       - "8086:8086"
       - "8090:8090"
-  chronograf:
-    container_name: safran-db-ui
-    image: chronograf:latest
-    ports:
-      - "8888:8888"
-    links:
-      - influxdb
+    volumes:
+      - ./data:/var/lib/influxdb
+  #chronograf:
+  #  container_name: safran-db-ui
+  #  image: chronograf:latest
+  #  ports:
+  #    - "8888:8888"
+  #  links:
+  #    - influxdb
 volumes:
   data:

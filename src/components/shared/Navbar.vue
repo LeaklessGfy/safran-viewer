@@ -38,7 +38,7 @@
             label="Loading..."
             variant="light"
             type="grow"
-          /> Loading...
+          /> Chargement...
         </b-button>
       </b-navbar-nav>
     </b-collapse>

@@ -60,7 +60,7 @@ export default {
       this.service.startTimeline(currentDate);
 
       this.interval = setInterval(() => {
-        const newDate = this.chart.tickTimeline(speed);
+        const newDate = this.service.tickTimeline(speed);
         if (newDate.getTime() >= this.experiment.endTime) {
           clearInterval(this.interval);
           this.service.stopTimeline();

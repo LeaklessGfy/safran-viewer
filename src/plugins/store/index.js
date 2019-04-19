@@ -19,6 +19,15 @@ const createChartModule = mod => ({
     modifications: []
   },
   mutations: {
+    RESET(state) {
+      state.experiment = null;
+      state.startTime = null;
+      state.endTime = null;
+      state.currentTime = null;
+      state.measures = {};
+      state.timeline = [];
+      state.modifications = [];
+    },
     SET_EXPERIMENT(state, experiment) {
       state.experiment = experiment;
       state.currentTime = dateToTime(experiment.beginTime);
@@ -123,7 +132,7 @@ export const store = new Vuex.Store({
     experiments: [],
     options: {
       blocks: [2, 2, 2, 3],
-      delimiters: [':', ':', ':'],
+      delimiters: [':', ':', '.'],
       numericOnly: true,
       numeralPositiveOnly: true,
       stripLeadingZeroes: false

@@ -26,7 +26,7 @@ export default {
         title: 'Erreur',
         text: err,
         duration: 5000
-      })
+      });
     });
   },
   beforeDestroy() {

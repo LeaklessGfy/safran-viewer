@@ -165,8 +165,9 @@ export default class ChartService {
     series.tensionX = 1;
     series.minBulletDistance = 15;
     series.data = this._normalizeSamples(samples, measure.unit);
-    series.stroke = this._chart.colors.list[index]; // %3 car on a que 3 couleurs max
+    series.stroke = this._chart.colors.list[index];
     series.fill = this._chart.colors.list[index];
+    series.dummyData = series.data.map(data => Object.assign({}, data));
 
     valueAxis.maxPrecision = 0;
     valueAxis.renderer.line.strokeOpacity = 1;
@@ -301,16 +302,16 @@ export default class ChartService {
     }
   }
 
-  addRange(id, measure, startDate, endDate, operation, value) {
-    const series = this._measuresSeries[measure.id];
+  addRange(modification) {
+    const series = this._measuresSeries[modification.measure];
     
     if (!series) {
       throw new Error('Series not found');
     }
 
     const range = this._dateAxis.createSeriesRange(series);
-    range.value = startDate;
-    range.endValue = endDate;
+    range.value = modification.startDate;
+    range.endValue = modification.endDate;
     range.contents.stroke = am4core.color('#FA8072');
     range.contents.fill = am4core.color('#FA8072');
     range.contents.fillOpacity = 0.5;
@@ -318,37 +319,52 @@ export default class ChartService {
     range.axisFill.tooltipText = 'Modification';
     range.axisFill.interactionsEnabled = true;
     range.axisFill.isMeasured = true;
-    range.dummyData = measure.id;
-    this._ranges[id] = range;
+    range.dummyData = modification;
+    this._ranges[modification.id] = range;
 
-    // Backing up data
-    series.dummyData = series.data.map(data => Object.assign({}, data));
-    series.data = series.data.map(data => {
-      if (data.time >= startDate && data.time <= endDate) {
-        if (operation === 'ADD') {
-          data.value += value;
+    series.data = series.data.map(item => {
+      if (item.time.getTime() >= modification.startDate && item.time.getTime() <= modification.endDate) {
+        if (modification.operation === 'ADD') {
+          item.value += modification.value; // CAREFULL
         } else {
-          data.value = value;
+          item.value = modification.value;
         }
       }
-      return data;      
+      return item;      
     });
 
     series.invalidateData();
   }
 
-  removeRange(id) {
-    const range = this._ranges[id];
+  removeRange(modification) {
+    const range = this._ranges[modification.id];
+    delete this._ranges[modification.id];
 
     if (!range) {
       return;
     }
 
-    const series = this._measuresSeries[range.dummyData];
+    const series = this._measuresSeries[range.dummyData.measure];
     range.contents.fillOpacity = 0;
     range.contents.stroke = series.stroke;
-    delete this._ranges[id];
-    series.data = series.dummyData;
+    
+    let data = series.dummyData.map(item => Object.assign({}, item));
+    Object.values(this._ranges).forEach(r => {
+      if (r.dummyData.measure === range.dummyData.measure) {
+        data = data.map(item => {
+          if (item.time.getTime() >= r.dummyData.startDate && item.time.getTime() <= r.dummyData.endDate) {
+            if (r.dummyData.operation === 'ADD') {
+              item.value += r.dummyData.value; // CARREFUL
+            } else {
+              item.value = r.dummyData.value;
+            }
+          }
+          return item;
+        });
+      }
+    });
+    series.data = data;
+    
     series.invalidateData();
   }
 

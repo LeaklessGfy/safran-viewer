@@ -50,8 +50,8 @@ export default class Database {
       isLoad: false
     };
     return this._insertDoc(doc)
-    .then(() => {
-      return doc;
+    .then(result => {
+      return Object.assign(doc, result);
     });
   }
 

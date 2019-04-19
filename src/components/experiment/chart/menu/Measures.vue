@@ -8,6 +8,8 @@
       id="measuresModal"
       title="Mesures"
       size="xl"
+      ok-title="Charger"
+      cancel-title="Annuler"
       @show="onShowMeasures"
       @ok="onSubmitMeasure"
     >

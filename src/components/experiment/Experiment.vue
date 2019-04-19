@@ -64,6 +64,9 @@ export default {
   mounted() {
     this.$store.dispatch(`${this.mod}/fetchExperiment`, this.$route.params.id);
   },
+  beforeDestroy() {
+    this.$store.commit(`${this.mod}/RESET`);
+  },
   methods: {
     dateToString
   }

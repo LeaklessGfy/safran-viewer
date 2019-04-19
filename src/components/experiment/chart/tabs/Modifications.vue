@@ -18,6 +18,12 @@
         <v-icon name="cloud-download-alt" />
         Charger
       </b-button>
+      <b-badge
+        v-else
+        variant="success"
+      >
+        Chargé
+      </b-badge>
     </template>
     <template
       slot="actions"
@@ -94,10 +100,10 @@ export default {
   methods: {
     onToggleModification(modification) {
       this.$store.commit(`${this.mod}/TOGGLE_MODIFICATION`, modification);
-      if (!modification.isApply) {
-        //this.service.addRange(modification);
+      if (modification.isApply) {
+        this.service.addRange(modification);
       } else {
-        //this.service.removeRange(modification);
+        this.service.removeRange(modification);
       }
     },
     onRemoveModification(modification) {
@@ -106,9 +112,9 @@ export default {
     },
     async onLoadMeasure(id) {
       const measure = await this.$db.fetchMeasure(id);
-      this.$store.dispatch(`${this.mod}/addMeasure`, measure);
       const samples = await this.$db.fetchSamples(id);
       this.service.addMeasure(measure, samples);
+      this.$store.dispatch(`${this.mod}/addMeasure`, measure);
     },
     dateToTime
   }

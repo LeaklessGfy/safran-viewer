@@ -2,7 +2,10 @@
   <b-container class="pb-5">
     <h1>Import</h1>
 
-    <b-form @submit="onSubmit" @reset="onReset">
+    <b-form
+      @submit="onSubmit"
+      @reset="onReset"
+    >
       <b-form-group>
         <b-form-checkbox v-model="local">
           Créer en Local ?
@@ -28,10 +31,18 @@
       </b-form-group>
 
       <div class="border p-3 mb-3">
-        <b-form-group v-if="benchs.length" label="Banc">
-          <b-form-select v-model="bench" :options="benchs">
+        <b-form-group
+          v-if="benchs.length"
+          label="Banc"
+        >
+          <b-form-select
+            v-model="bench"
+            :options="benchs"
+          >
             <template slot="first">
-              <option :value="newBench">New...</option>
+              <option :value="newBench">
+                Créer...
+              </option>
             </template>
           </b-form-select>
         </b-form-group>
@@ -57,10 +68,18 @@
       </div>
 
       <div class="border p-3 mb-3">
-        <b-form-group v-if="campaigns.length" label="Campagne">
-          <b-form-select v-model="campaign" :options="campaigns">
+        <b-form-group
+          v-if="campaigns.length"
+          label="Campagne"
+        >
+          <b-form-select
+            v-model="campaign"
+            :options="campaigns"
+          >
             <template slot="first">
-              <option :value="newCampaign">New...</option>
+              <option :value="newCampaign">
+                Créer...
+              </option>
             </template>
           </b-form-select>
         </b-form-group>
@@ -94,13 +113,32 @@
         />
       </b-form-group>
 
-      <b-form-group v-if="progress > 0" label="Progression">
-        <b-progress :value="progress" variant="success" striped :animated="progress < 100" />
+      <b-form-group
+        v-if="progress > 0 && progress < 100"
+        label="Progression"
+      >
+        <b-progress
+          :value="progress"
+          :animated="progress < 100"
+          striped
+          variant="success"
+        />
       </b-form-group>
 
       <div class="mt-2">
-        <b-button type="reset" variant="danger" class="mr-2">Réinitialiser</b-button>
-        <b-button type="submit" variant="primary">Importer</b-button>
+        <b-button
+          type="reset"
+          variant="danger"
+          class="mr-2"
+        >
+          Réinitialiser
+        </b-button>
+        <b-button
+          type="submit"
+          variant="primary"
+        >
+          Importer
+        </b-button>
       </div>
     </b-form>
   </b-container>

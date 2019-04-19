@@ -36,11 +36,21 @@ export default class ImportService {
   }
 
   async import() {
-    await this.importExperiment();
-    await this.importMeasures();
+    try {
+      await this.importExperiment();
+      await this.importMeasures();
+    } catch (err) {
+      this._subject.error(err);
+      throw err;
+    }
+
     Promise.all([this.importSamples(), this.importAlarms()])
     .then(() => {
       this._subject.complete();
+    })
+    .catch(err => {
+      this._subject.error(err);
+      throw err;
     });
   }
 
@@ -55,8 +65,8 @@ export default class ImportService {
   }
 
   async importMeasures() {
-    const measures = await this._parser.parseMeasures();
     try {
+      const measures = await this._parser.parseMeasures();
       const measuresId = await this._db.insertMeasures(this._idHolder.experiment, measures);
       if (!measuresId) {
         this._db.removeExperiment(this._idHolder.experiment);
@@ -83,9 +93,14 @@ export default class ImportService {
   }
 
   async importAlarms() {
-    const alarms = await this._parser.parseAlarms();
-    if (alarms.length > 0) {
-      await this._db.insertAlarms(this._idHolder.experiment, alarms, this._experiment.beginTime);      
+    try {
+      const alarms = await this._parser.parseAlarms();
+      if (alarms.length > 0) {
+        await this._db.insertAlarms(this._idHolder.experiment, alarms, this._experiment.beginTime);      
+      }
+    } catch (err) {
+      this._db.removeExperiment(this._idHolder.experiment);
+      throw err;
     }
   }
 }
