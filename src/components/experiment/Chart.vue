@@ -41,11 +41,6 @@ export default {
       service: null
     };
   },
-  subscriptions() {
-    return {
-      measures: this.$db.getMeasures()
-    };
-  },
   computed: {
     experiment() {
       return this.$store.state[this.mod].experiment;
