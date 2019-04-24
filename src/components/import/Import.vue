@@ -146,8 +146,7 @@
 </template>
 
 <script>
-import { map } from 'rxjs/operators';
-import ImportService from '../../services/import';
+import ImportService from '@/services/import';
 
 const defaultBench = { reference: 'test', name: 'test' };
 const defaultCampaign = { id12c: 'test' };
@@ -167,15 +166,17 @@ const defaultState = {
 
 export default {
   data: () => Object.assign({}, defaultState),
-  subscriptions() {
-    return {
-      benchs: this.$db.fetchBenchs().pipe(
-        map(benchs => benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })))
-      ),
-      campaigns: this.$db.fetchCampaigns().pipe(
-        map(campaigns => campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })))
-      )
-    };
+  computed: {
+    benchs() {
+      return this.$store.state.benchs;
+    },
+    campaigns() {
+      return this.$store.state.campaigns;
+    }
+  },
+  mounted() {
+    this.$store.dispatch('fetchBenchs');
+    this.$store.dispatch('fetchCampaigns');
   },
   methods: {
     async onSubmit(e) {

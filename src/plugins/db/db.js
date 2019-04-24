@@ -6,33 +6,15 @@ class DBHandler {
   _local;
   _remote;
 
-  /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
-  _benchsSubject;
-  _campaignsSubject;
-  _measuresSubject;
 
   constructor() {
-    /* SUBJECTS */
     this._errorsSubject = new Subject();
     this._loadingSubject = new BehaviorSubject(false);
-    this._benchsSubject = new BehaviorSubject([]);
-    this._campaignsSubject = new BehaviorSubject([]);
-    this._measuresSubject = new BehaviorSubject([]);
 
-    /* DB */
-    this._local = new LocalDB(
-      this._errorsSubject,
-      this._loadingSubject
-    );
-    this._remote = new RemoteDB(
-      this._errorsSubject,
-      this._loadingSubject,
-      this._benchsSubject,
-      this._campaignsSubject,
-      this._measuresSubject
-    );
+    this._local = new LocalDB(this._errorsSubject, this._loadingSubject);
+    this._remote = new RemoteDB(this._errorsSubject, this._loadingSubject);
   }
 
   getErrors() {
@@ -41,18 +23,6 @@ class DBHandler {
 
   getLoading() {
     return this._loadingSubject;
-  }
-
-  getBenchs() {
-    return this._benchsSubject;
-  }
-
-  getCampaigns() {
-    return this._campaignsSubject;
-  }
-
-  getMeasures() {
-    return this._measuresSubject;
   }
 
   getLocal() {

@@ -37,6 +37,7 @@ export default class Database {
   }
 
   insertModification(modification, experiment) {
+    this._loadingSubject.next(true);
     const doc = {
       id: uuidv4(),
       typeX: 'modification',
@@ -54,21 +55,45 @@ export default class Database {
       doc._id = result.id;
       doc._rev = result.rev;
       return doc;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
     });
   }
 
   removeModification(modification) {
-   return this._db.remove(modification)
-   .then(result => {
-     if (!result.ok) {
-       throw new Error('Error while removing');
-     }
-     return result;
-   })
-   .catch(err => {
-     this._errorsSubject.next(err);
-     throw err;
-   });
+    this._loadingSubject.next(true);
+    return this._db.remove(modification)
+    .then(result => {
+      if (!result.ok) {
+        throw new Error('Error while removing');
+      }
+      return result;
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
+  }
+
+  fetchProtocols() {
+    this._loadingSubject.next(true);
+    return this._db.query('protocols/findAll', {
+      include_docs: true
+    })
+    .then(values => {
+      return values.rows.map(row => row.doc);
+    })
+    .catch(err => {
+      this._errorsSubject.next(err);
+      throw err;
+    })
+    .finally(() => {
+      this._loadingSubject.next(false);
+    });
   }
 
   insertProtocols(protocols) {

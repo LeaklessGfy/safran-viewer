@@ -1,4 +1,4 @@
-import { parse, format, getTime, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
+import { parse, format, getTime } from 'date-fns';
 
 export const dateToString = date => format(date, 'DD/MM/YYYY HH:mm:ss.SSS');
 
@@ -38,11 +38,11 @@ export const timeToDate = (time, date) => {
     millis = timeSplit[3];
   }
 
-  let build = new Date(date);
-  build = setHours(build, parseInt(hours, 10));
-  build = setMinutes(build, parseInt(mins, 10));
-  build = setSeconds(build, parseInt(secs, 10));
-  build = setMilliseconds(build, parseInt(millis, 10));
+  const build = new Date(date);
+  build.setHours(parseInt(hours, 10));
+  build.setMinutes(parseInt(mins, 10));
+  build.setSeconds(parseInt(secs, 10));
+  build.setMilliseconds(parseInt(millis, 10));
 
   return build;
 };

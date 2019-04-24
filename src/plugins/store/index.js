@@ -132,6 +132,27 @@ export const store = new Vuex.Store({
   strict: true,
   state: {
     experiments: [],
+    benchs: [],
+    campaigns: [],
+    measures: [],
+    protocols: {
+      iena: {
+        ip: '',
+        port: 1234,
+        moduleName: '',
+        mac: '',
+        key: 1,
+        frequency: 500
+      },
+      ddsrti: {
+        ip: '',
+        domainId: 1,
+        topic: ''
+      },
+      avis: {
+        url: ''
+      }
+    },
     options: {
       blocks: [2, 2, 2, 3],
       delimiters: [':', ':', '.'],
@@ -143,6 +164,21 @@ export const store = new Vuex.Store({
   mutations: {
     SET_EXPERIMENTS(state, experiments) {
       state.experiments = experiments;
+    },
+    SET_BENCHS(state, benchs) {
+      state.benchs = benchs;
+    },
+    SET_CAMPAIGNS(state, campaigns) {
+      state.campaigns = campaigns;
+    },
+    SET_MEASURES(state, measures) {
+      state.measures = measures;
+    },
+    SET_PROTOCOLS(state, protocols) {
+      state.protocols = protocols;
+    },
+    SET_PROTOCOL(state, { key, protocol }) {
+      state.protocols[key] = protocol;
     }
   },
   actions: {
@@ -150,6 +186,30 @@ export const store = new Vuex.Store({
       DB.fetchExperiments(page)
       .then(experiments => {
         commit('SET_EXPERIMENTS', experiments);
+      });
+    },
+    fetchBenchs({ commit }) {
+      DB.fetchBenchs()
+      .then(benchs => {
+        commit('SET_BENCHS', benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })));
+      });
+    },
+    fetchCampaigns({ commit }) {
+      DB.fetchCampaigns()
+      .then(campaigns => {
+        commit('SET_CAMPAIGNS', campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })));
+      });
+    },
+    fetchMeasures({ commit }, { experimentId, page }) {
+      DB.fetchMeasures(experimentId, page)
+      .then(measures => {
+        commit('SET_MEASURES', measures);
+      });
+    },
+    fetchProtocols({ commit }) {
+      DB.fetchProtocols()
+      .then(protocols => {
+        commit('SET_PROTOCOLS', protocols);
       });
     }
   },

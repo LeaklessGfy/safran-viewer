@@ -4,11 +4,7 @@
 
     <b-card-group deck>
       <iena />
-
-      <!-- DDSRTI -->
       <ddsrti />
-
-      <!-- AVIS -->
       <avis />
     </b-card-group>
   </b-container>

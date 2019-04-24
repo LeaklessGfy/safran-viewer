@@ -14,23 +14,14 @@ export default class Database {
   /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
-  _benchsSubject;
-  _campaignsSubject;
-  _measuresSubject;
 
-  constructor(
-    errors, loading,
-    benchs, campaigns, measures
-  ) {
+  constructor(errors, loading) {
     this._host = 'localhost';
     this._port = 8086;
     this._limit = 5;
 
     this._errorsSubject = errors;
     this._loadingSubject = loading;
-    this._benchsSubject = benchs;
-    this._campaignsSubject = campaigns;
-    this._measuresSubject = measures;
 
     this.openDatabase();
     this.install();
@@ -98,34 +89,32 @@ export default class Database {
 
   fetchBenchs() {
     this._loadingSubject.next(true);
-    this._db.query('SELECT DISTINCT(bench) FROM experiments;')
+    return this._db.query('SELECT DISTINCT(bench) FROM experiments;')
     .then(result => {
-      this._benchsSubject.next(result.map(r => JSON.parse(r.distinct)));
+      return result.map(r => JSON.parse(r.distinct));
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._benchsSubject.next([]);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._benchsSubject;
   }
 
   fetchCampaigns() {
     this._loadingSubject.next(true);
-    this._db.query('SELECT DISTINCT(campaign) FROM experiments;')
+    return this._db.query('SELECT DISTINCT(campaign) FROM experiments;')
     .then(result => {
-      this._campaignsSubject.next(result.map(r => JSON.parse(r.distinct)));
+      return result.map(r => JSON.parse(r.distinct));
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._campaignsSubject.next([]);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._campaignsSubject;
   }
 
   fetchMeasure(id) {
@@ -148,7 +137,7 @@ export default class Database {
 
   fetchMeasures(experimentId, page = 1) {
     this._loadingSubject.next(true);
-    Promise.all([
+    return Promise.all([
       this._db.query(
         `SELECT * FROM measures
         WHERE "experimentId"=${Influx.escape.stringLit(experimentId)}
@@ -162,16 +151,15 @@ export default class Database {
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
       result.limit = this._limit;
-      this._measuresSubject.next(result);
+      return result;
     })
     .catch(err => {
       this._errorsSubject.next(err);
-      this._measuresSubject.next([]);
+      throw err;
     })
     .finally(() => {
       this._loadingSubject.next(false);
     });
-    return this._measuresSubject;
   }
 
   fetchSamples(measureId) {

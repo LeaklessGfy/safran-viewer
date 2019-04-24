@@ -76,20 +76,18 @@ export default {
     },
     selectedMeasuresValues() {
       return this.$store.getters[this.mod + '/measures'];
+    },
+    measures() {
+      return this.$store.state.measures;
     }
-  },
-  subscriptions() {
-    return {
-      measures: this.$db.getMeasures()
-    };
   },
   methods: {
     onShowMeasures() {
-      this.$db.fetchMeasures(this.experiment.id);
+      this.$store.dispatch('fetchMeasures', { experimentId: this.experiment.id });
       this.tmpMeasures = Object.values(this.selectedMeasures);
     },
     onMeasurePageChange(page) {
-      this.$db.fetchMeasures(this.experiment.id, page);
+      this.$store.dispatch('fetchMeasures', { experimentId: this.experiment.id, page });
     },
     onClickAddMeasure(measure) {
       this.tmpMeasures.push(measure);
@@ -117,7 +115,7 @@ export default {
       }
 
       this.$store.dispatch(`${this.mod}/updateMeasures`, selectedMeasures);
-      this.$db.fetchModifications(this.experiment.id);
+      //this.$db.fetchModifications(this.experiment.id);
     }
   }
 };
