@@ -24,7 +24,7 @@
     </b-list-group>
 
     <b-pagination
-      v-model="experiments.current"
+      v-model="currentPage"
       :total-rows="experiments.total"
       :per-page="experiments.limit"
       size="md"
@@ -54,6 +54,7 @@
 export default {
   data() {
     return {
+      currentPage: 1,
       show: false,
       del: null
     };
@@ -69,6 +70,7 @@ export default {
   methods: {
     onPageChange(page) {
       this.$store.dispatch('fetchExperiments', page);
+      this.currentPage = page;
     },
     onClickDelete(e, del) {
       e.preventDefault();

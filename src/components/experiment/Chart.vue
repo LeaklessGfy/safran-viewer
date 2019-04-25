@@ -47,7 +47,7 @@ export default {
     }
   },
   mounted() {
-    this.service = new ChartService(this.$refs[this.mod], this.experiment.beginTime, this.experiment.endTime);
+    this.service = new ChartService(this.$refs[this.mod], this.experiment.startDate, this.experiment.endDate);
     ChartContext[this.mod] = this.service;
 
     this.$db.fetchAlarms(this.experiment.id)

@@ -38,7 +38,7 @@
       </b-list-group>
 
       <b-pagination
-        v-model="measures.current"
+        v-model="currentPage"
         :total-rows="measures.total"
         :per-page="measures.limit"
         size="md"
@@ -64,6 +64,7 @@ export default {
   },
   data() {
     return {
+      currentPage: 1,
       tmpMeasures: []
     };
   },
@@ -88,6 +89,7 @@ export default {
     },
     onMeasurePageChange(page) {
       this.$store.dispatch('fetchMeasures', { experimentId: this.experiment.id, page });
+      this.currentPage = page;
     },
     onClickAddMeasure(measure) {
       this.tmpMeasures.push(measure);

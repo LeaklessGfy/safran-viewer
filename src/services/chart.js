@@ -2,7 +2,7 @@ import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
 import { addMilliseconds } from 'date-fns';
-import { dateToTime } from './date';
+import { dateToTime, stringToDate } from './date';
 
 am4core.useTheme(am4themes_animated);
 
@@ -251,6 +251,9 @@ export default class ChartService {
   }
 
   rescale(startDate, endDate) {
+    startDate = stringToDate(startDate);
+    endDate = stringToDate(endDate);
+
     this._date = startDate;
     this._dateAxis.min = startDate;
     this._dateAxis.max = endDate;

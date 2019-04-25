@@ -48,10 +48,10 @@ export default {
         'id',
         'name',
         'reference',
-        { key: 'bench', formatter: value => value ? JSON.parse(value).name : '' },
-        { key: 'campaign', formatter: value => value ? JSON.parse(value).id12c : '' },
-        { key: 'beginTime', formatter: dateToString },
-        { key: 'endTime', formatter: dateToString },
+        'bench',
+        'campaign',
+        { key: 'startDate', formatter: dateToString },
+        { key: 'endDate', formatter: dateToString },
         'isLocal'
       ]
     };

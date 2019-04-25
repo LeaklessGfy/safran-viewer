@@ -115,12 +115,10 @@ export default {
     }
   },
   mounted() {
-    /*
     this.service.addOnZoomListener((startDate, endDate) => {
       this.startTime = dateToTime(startDate);
       this.endTime = dateToTime(endDate);
     });
-    */
     this.service.addOnDateListener(date => {
       this.currentTime = dateToTime(date);
     });

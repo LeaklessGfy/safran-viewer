@@ -30,9 +30,9 @@ const createChartModule = mod => ({
     },
     SET_EXPERIMENT(state, experiment) {
       state.experiment = experiment;
-      state.startTime = dateToTime(experiment.beginTime);
-      state.endTime = dateToTime(experiment.endTime);
-      state.currentTime = dateToTime(experiment.beginTime);
+      state.startTime = dateToTime(experiment.startDate);
+      state.endTime = dateToTime(experiment.endDate);
+      state.currentTime = dateToTime(experiment.startDate);
     },
     SET_START_TIME(state, startTime) {
       state.startTime = startTime;
@@ -48,7 +48,7 @@ const createChartModule = mod => ({
     },
     UPDATE_TIMELINE(state, date) {
       if (!date && state.currentTime) {
-        date = timeToDate(state.currentTime, state.experiment.beginTime);
+        date = timeToDate(state.currentTime, state.experiment.startDate);
       }
 
       state.timeline = Object.values(state.measures).map(measure => {
