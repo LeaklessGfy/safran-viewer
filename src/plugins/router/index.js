@@ -6,6 +6,8 @@ import Protocol from '@/components/protocol/Protocol';
 import Import from '@/components/import/Import';
 import Config from '@/components/config/Config';
 
+import Test from '@/components/Test';
+
 Vue.use(VueRouter);
 
 const routes = [
@@ -13,7 +15,8 @@ const routes = [
   { path: '/experiment/:id', name: 'experiment', component: Experiment },
   { path: '/protocol', name: 'protocol', component: Protocol },
   { path: '/import', name: 'import', component: Import },
-  { path: '/config', name: 'config', component: Config }
+  { path: '/config', name: 'config', component: Config },
+  { path: '/test', name: 'test', component: Test }
 ];
 
 export const router = new VueRouter({ routes });
