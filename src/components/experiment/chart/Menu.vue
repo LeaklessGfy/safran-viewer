@@ -129,9 +129,9 @@ export default {
         return;
       }
       if (e.keyCode === undefined || e.keyCode === 13) {
-        let startDate = timeToTimestamp(this.startTime, this.experiment.beginTime);
-        let endDate = timeToTimestamp(this.endTime, this.experiment.endTime);
-        let currentDate = timeToTimestamp(this.currentTime, this.experiment.beginTime);
+        let startDate = timeToTimestamp(this.startTime, this.experiment.startDate);
+        let endDate = timeToTimestamp(this.endTime, this.experiment.endDate);
+        let currentDate = timeToTimestamp(this.currentTime, this.experiment.startDate);
         startDate = this.validateDate(startDate);
         endDate = this.validateDate(endDate);
         currentDate = this.validateDate(currentDate);
@@ -143,10 +143,10 @@ export default {
       }
     },
     validateDate(date) {
-      if (date < this.experiment.beginTime) {
-        return this.experiment.beginTime;
-      } else if (date > this.experiment.endTime) {
-        return this.experiment.endTime;
+      if (date < this.experiment.startDate) {
+        return this.experiment.startDate;
+      } else if (date > this.experiment.endDate) {
+        return this.experiment.endDate;
       }
       return date;
     }

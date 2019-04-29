@@ -3,7 +3,63 @@ import * as Comlink from 'comlinkjs';
 
 const SAMPLE_STACK_INSERT = 500;
 
-export default class ImportService {
+export const ImportServiceFactory = (local, db) => {
+  if (local) {
+    return new LocalImportService(db);
+  }
+  return new RemoteImportService();
+};
+
+class RemoteImportService {
+  _subject;
+  _formData;
+
+  async init(experiment, samplesFile, alarmsFile) {
+    this._subject = new Subject();
+    const source = new EventSource('http://localhost:8888/events');
+    source.onmessage = event => {
+      const data = JSON.parse(event.data);
+      if (data.status === 'success') {
+        return this._subject.complete();
+      } else if (data.status === 'failure') {
+        return this._subject.error(data.errors);
+      }
+      this._subject.next(data.progress);
+    };
+    source.onerror = event => {
+      this._subject.error(event);
+      throw event;
+    };
+
+    this._formData = new FormData();
+    this._formData.append('experiment', JSON.stringify(experiment));
+    this._formData.append('samples', samplesFile);
+    this._formData.append('alarms', alarmsFile);
+
+    return this._subject;
+  }
+
+  async import() {
+    fetch('http://localhost:8888/upload', {
+      method: 'POST',
+      body: this._formData
+    })
+    .then(response => {
+      return response.json();
+    })
+    .then(response => {
+      if (response.status === 'failure') {
+        throw new Error(response.errors.join(','));
+      }
+    })
+    .catch(err => {
+      this._subject.error(err);
+      throw err;
+    });
+  }
+}
+
+class LocalImportService {
   _db;
   _worker;
 

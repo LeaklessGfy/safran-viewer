@@ -191,13 +191,13 @@ export const store = new Vuex.Store({
     fetchBenchs({ commit }) {
       DB.fetchBenchs()
       .then(benchs => {
-        commit('SET_BENCHS', benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })));
+        commit('SET_BENCHS', benchs);
       });
     },
     fetchCampaigns({ commit }) {
       DB.fetchCampaigns()
       .then(campaigns => {
-        commit('SET_CAMPAIGNS', campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })));
+        commit('SET_CAMPAIGNS', campaigns);
       });
     },
     fetchMeasures({ commit }, { experimentId, page }) {

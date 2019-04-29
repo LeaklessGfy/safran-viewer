@@ -2,6 +2,7 @@ import * as Influx from 'influx';
 import uuidv4 from 'uuid/v4';
 import Schema from './schema';
 import { dateToTimestamp, timeToTimestamp } from '@/services/date';
+import { stringToDate } from '../../../services/date';
 
 const DATABASE_NAME = 'safran_db';
 
@@ -50,11 +51,15 @@ export default class Database {
   fetchExperiment(id) {
     this._loadingSubject.next(true);
     return this._db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
-    .then(result => {
-      if (result.length < 1) {
+    .then(values => {
+      if (values.length < 1) {
         throw new Error('Experiment not found with id ' + id);
       }
-      return result[0];
+      return {
+        ...values[0],
+        startDate: stringToDate(values[0].startDate),
+        endDate: stringToDate(values[0].endDate)
+      };
     })
     .catch(err => {
       this._errorsSubject.next(err);
@@ -91,7 +96,7 @@ export default class Database {
     this._loadingSubject.next(true);
     return this._db.query('SELECT DISTINCT(bench) FROM experiments;')
     .then(result => {
-      return result.map(r => JSON.parse(r.distinct));
+      return result.map(r => r.distinct);
     })
     .catch(err => {
       this._errorsSubject.next(err);
@@ -106,7 +111,7 @@ export default class Database {
     this._loadingSubject.next(true);
     return this._db.query('SELECT DISTINCT(campaign) FROM experiments;')
     .then(result => {
-      return result.map(r => JSON.parse(r.distinct));
+      return result.map(r => r.distinct);
     })
     .catch(err => {
       this._errorsSubject.next(err);
@@ -140,11 +145,11 @@ export default class Database {
     return Promise.all([
       this._db.query(
         `SELECT * FROM measures
-        WHERE "experimentId"=${Influx.escape.stringLit(experimentId)}
+        WHERE "experimentID"=${Influx.escape.stringLit(experimentId)}
         LIMIT ${this._limit}
         OFFSET ${(page - 1) * this._limit};`
       ),
-      this._db.query(`SELECT count("name") FROM measures WHERE "experimentId"=${Influx.escape.stringLit(experimentId)};`)
+      this._db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`)
     ])
     .then(values => {
       const result = values[0];
@@ -165,7 +170,7 @@ export default class Database {
   fetchSamples(measureId) {
     this._loadingSubject.next(true);
     return this._db.query(
-      `SELECT * FROM samples WHERE "measureId"=${Influx.escape.stringLit(measureId)};`,
+      `SELECT * FROM samples WHERE "measureID"=${Influx.escape.stringLit(measureId)};`,
       { precision: Influx.Precision.Milliseconds }
     )
     .catch(err => {
@@ -180,7 +185,7 @@ export default class Database {
   fetchAlarms(experimentId) {
     this._loadingSubject.next(true);
     return this._db.query(
-      `SELECT * FROM alarms WHERE "experimentId"=${Influx.escape.stringLit(experimentId)};`,
+      `SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`,
       { precision: Influx.Precision.Milliseconds }
     )
     .catch(err => {

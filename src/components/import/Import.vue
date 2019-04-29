@@ -6,10 +6,8 @@
       @submit="onSubmit"
       @reset="onReset"
     >
-      <b-form-group>
-        <b-form-checkbox v-model="local">
-          Créer en Local ?
-        </b-form-checkbox>
+      <b-form-group label="Créer en local ?">
+        <toggle-button v-model="local" />
       </b-form-group>
 
       <b-form-group label="Référence">
@@ -32,35 +30,26 @@
 
       <div class="border p-3 mb-3">
         <b-form-group
-          v-if="benchs.length"
           label="Banc"
         >
           <b-form-select
-            v-model="bench"
+            v-model="benchChoice"
             :options="benchs"
           >
             <template slot="first">
-              <option :value="newBench">
+              <option :value="null">
                 Créer...
               </option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="bench === newBench">
-          <b-form-group label="Référence du banc">
+        <div v-if="benchChoice === null">
+          <b-form-group label="Banc">
             <b-form-input
-              v-model="bench.reference"
-              :state="Boolean(bench.reference)"
-              placeholder="Référence du banc"
-              required
-            />
-          </b-form-group>
-          <b-form-group label="Nom du banc">
-            <b-form-input
-              v-model="bench.name"
-              :state="Boolean(bench.name)"
-              placeholder="Nom du banc"
+              v-model="bench"
+              :state="Boolean(bench)"
+              placeholder="Banc"
               required
             />
           </b-form-group>
@@ -69,27 +58,26 @@
 
       <div class="border p-3 mb-3">
         <b-form-group
-          v-if="campaigns.length"
           label="Campagne"
         >
           <b-form-select
-            v-model="campaign"
+            v-model="campaignChoice"
             :options="campaigns"
           >
             <template slot="first">
-              <option :value="newCampaign">
+              <option :value="null">
                 Créer...
               </option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="campaign === newCampaign">
-          <b-form-group label="ID12C de la campagne">
+        <div v-if="campaignChoice === null">
+          <b-form-group label="Campagne">
             <b-form-input
-              v-model="campaign.id12c"
-              :state="Boolean(campaign.id12c)"
-              placeholder="ID12C de la campagne"
+              v-model="campaign"
+              :state="Boolean(campaign)"
+              placeholder="Campagne"
               required
             />
           </b-form-group>
@@ -98,8 +86,8 @@
 
       <b-form-group label="Fichier Essai *">
         <b-form-file
-          v-model="experimentFile"
-          :state="Boolean(experimentFile)"
+          v-model="samplesFile"
+          :state="Boolean(samplesFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
           required
@@ -146,20 +134,17 @@
 </template>
 
 <script>
-import ImportService from '@/services/import';
-
-const defaultBench = { reference: 'test', name: 'test' };
-const defaultCampaign = { id12c: 'test' };
+import { ImportServiceFactory } from '@/services/import';
 
 const defaultState = {
-  local: true,
+  local: false,
   reference: 'test',
   name: 'test',
-  bench: defaultBench,
-  campaign: defaultCampaign,
-  newBench: defaultBench,
-  newCampaign: defaultCampaign,
-  experimentFile: null,
+  benchChoice: null,
+  campaignChoice: null,
+  bench: 'test',
+  campaign: 'test',
+  samplesFile: null,
   alarmsFile: null,
   progress: 0
 };
@@ -184,17 +169,13 @@ export default {
       const experiment = {
         reference: this.reference,
         name: this.name,
-        bench: this.bench.name ? this.bench : JSON.parse(this.bench),
-        campaign: this.campaign.id12c ? this.campaign : JSON.parse(this.campaign),
+        bench: this.benchChoice ? this.benchChoice : this.bench,
+        campaign: this.campaignChoice ? this.campaignChoice : this.campaign,
         isLocal: false
       };
 
-      if (!this.local) {
-        return;
-      }
-
-      const service = new ImportService(this.$db);
-      const observable = await service.init(experiment, this.experimentFile, this.alarmsFile);
+      const service = ImportServiceFactory(this.local, this.$db);
+      const observable = await service.init(experiment, this.samplesFile, this.alarmsFile);
       observable.subscribe(
         progress => this.progress = progress,
         err => this.$notify({
