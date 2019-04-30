@@ -173,6 +173,12 @@ export default class Database {
       `SELECT * FROM samples WHERE "measureID"=${Influx.escape.stringLit(measureId)};`,
       { precision: Influx.Precision.Milliseconds }
     )
+    .then(values => {
+      return values.map(value => {
+        value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
+        return value;
+      });
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
@@ -188,6 +194,12 @@ export default class Database {
       `SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`,
       { precision: Influx.Precision.Milliseconds }
     )
+    .then(values => {
+      return values.map(value => {
+        value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
+        return value;
+      });
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
