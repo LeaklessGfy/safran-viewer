@@ -16,20 +16,6 @@ class RemoteImportService {
 
   async init(experiment, samplesFile, alarmsFile) {
     this._subject = new Subject();
-    const source = new EventSource('http://localhost:8888/events');
-    source.onmessage = event => {
-      const data = JSON.parse(event.data);
-      if (data.status === 'success') {
-        return this._subject.complete();
-      } else if (data.status === 'failure') {
-        return this._subject.error(data.errors);
-      }
-      this._subject.next(data.progress);
-    };
-    source.onerror = event => {
-      this._subject.error(event);
-      throw event;
-    };
 
     this._formData = new FormData();
     this._formData.append('experiment', JSON.stringify(experiment));
@@ -51,6 +37,21 @@ class RemoteImportService {
       if (response.status === 'failure') {
         throw new Error(response.errors.join(','));
       }
+
+      const source = new EventSource('http://localhost:8888/events?channel=' + response.channel);
+      source.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data.status === 'success') {
+          return this._subject.complete();
+        } else if (data.status === 'failure') {
+          return this._subject.error(data.errors);
+        }
+        this._subject.next(data.progress);
+      };
+      source.onerror = event => {
+        this._subject.error(event);
+        throw event;
+      };
     })
     .catch(err => {
       this._subject.error(err);
