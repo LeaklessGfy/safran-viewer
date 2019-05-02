@@ -11,18 +11,20 @@ export const ImportServiceFactory = (local, db) => {
 };
 
 class RemoteImportService {
-  _subject;
+  _samples;
+  _alarms;
   _formData;
 
   async init(experiment, samplesFile, alarmsFile) {
-    this._subject = new Subject();
+    this._samples = new Subject();
+    this._alarms = new Subject();
 
     this._formData = new FormData();
     this._formData.append('experiment', JSON.stringify(experiment));
     this._formData.append('samples', samplesFile);
     this._formData.append('alarms', alarmsFile);
 
-    return this._subject;
+    return [this._samples, this._alarms];
   }
 
   async import() {
@@ -35,26 +37,24 @@ class RemoteImportService {
     })
     .then(response => {
       if (response.status === 'failure') {
-        throw new Error(response.errors.join(','));
+        throw new Error(Object.values(response.errors).join(','));
       }
 
       const source = new EventSource('http://localhost:8888/events?channel=' + response.channel);
       source.onmessage = event => {
         const data = JSON.parse(event.data);
+        console.log(data);
+        const subject = data.title === 'Alarms' ? this._alarms : this._samples;
+        subject.next(data.progress);
         if (data.status === 'success') {
-          return this._subject.complete();
+          return subject.complete();
         } else if (data.status === 'failure') {
-          return this._subject.error(data.errors);
+          return subject.error(data.errors);
         }
-        this._subject.next(data.progress);
-      };
-      source.onerror = event => {
-        this._subject.error(event);
-        throw event;
       };
     })
     .catch(err => {
-      this._subject.error(err);
+      this._samples.error(err);
       throw err;
     });
   }

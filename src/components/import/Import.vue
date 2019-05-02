@@ -103,14 +103,26 @@
       </b-form-group>
 
       <b-form-group
-        v-if="progress > 0 && progress < 100"
-        label="Progression"
+        v-if="progressSamples > 0 && progressSamples < 100"
+        label="Progression essai"
       >
         <b-progress
-          :value="progress"
-          :animated="progress < 100"
+          :value="progressSamples"
+          :animated="true"
           striped
           variant="success"
+        />
+      </b-form-group>
+
+      <b-form-group
+        v-if="progressAlarms > 0 && progressAlarms < 100"
+        label="Progression alarmes"
+      >
+        <b-progress
+          :value="progressAlarms"
+          :animated="true"
+          striped
+          variant="warning"
         />
       </b-form-group>
 
@@ -146,7 +158,8 @@ const defaultState = {
   campaign: 'test',
   samplesFile: null,
   alarmsFile: null,
-  progress: 0
+  progressSamples: 0,
+  progressAlarms: 0
 };
 
 export default {
@@ -175,23 +188,40 @@ export default {
       };
 
       const service = ImportServiceFactory(this.local, this.$db);
-      const observable = await service.init(experiment, this.samplesFile, this.alarmsFile);
-      observable.subscribe(
-        progress => this.progress = progress,
+      const [ samples, alarms ] = await service.init(experiment, this.samplesFile, this.alarmsFile);
+      samples.subscribe(
+        progress => this.progressSamples = progress,
         err => this.$notify({
           type: 'error',
           title: 'Erreur',
           text: err
         }),
         () => {
-          this.progress = 100;
+          this.progressSamples = 100;
           this.$notify({
             type: 'success',
             title: 'Succès',
-            text: 'Import réussi'
+            text: 'Import essai réussi'
           });
         }
       );
+      alarms.subscribe(
+        progress => this.progressAlarms = progress,
+        err => this.$notify({
+          type: 'error',
+          title: 'Erreur',
+          text: err
+        }),
+        () => {
+          this.progressAlarms = 100;
+          this.$notify({
+            type: 'success',
+            title: 'Succès',
+            text: 'Import alarmes réussi'
+          });
+        }
+      );
+
       service.import();
     },
     onReset(e) {
