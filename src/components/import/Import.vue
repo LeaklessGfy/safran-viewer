@@ -141,6 +141,12 @@
           Importer
         </b-button>
       </div>
+
+      <b-form-group
+        v-if="report"
+      >
+        <pre>{{ report }}</pre>
+      </b-form-group>
     </b-form>
   </b-container>
 </template>
@@ -159,7 +165,8 @@ const defaultState = {
   samplesFile: null,
   alarmsFile: null,
   progressSamples: 0,
-  progressAlarms: 0
+  progressAlarms: 0,
+  report: null
 };
 
 export default {
@@ -188,41 +195,37 @@ export default {
       };
 
       const service = ImportServiceFactory(this.local, this.$db);
-      const [ samples, alarms ] = await service.init(experiment, this.samplesFile, this.alarmsFile);
-      samples.subscribe(
-        progress => this.progressSamples = progress,
-        err => this.$notify({
-          type: 'error',
-          title: 'Erreur',
-          text: err
-        }),
-        () => {
-          this.progressSamples = 100;
-          this.$notify({
-            type: 'success',
-            title: 'Succès',
-            text: 'Import essai réussi'
-          });
-        }
+      const obs = await service.init(experiment, this.samplesFile, this.alarmsFile);
+      obs.subscribe(
+        this.onNext.bind(this),
+        this.onError.bind(this),
+        this.onComplete.bind(this)
       );
-      alarms.subscribe(
-        progress => this.progressAlarms = progress,
-        err => this.$notify({
-          type: 'error',
-          title: 'Erreur',
-          text: err
-        }),
-        () => {
-          this.progressAlarms = 100;
-          this.$notify({
-            type: 'success',
-            title: 'Succès',
-            text: 'Import alarmes réussi'
-          });
-        }
-      );
-
       service.import();
+    },
+    onNext(report) {
+      if (report.title === 'Alarms') {
+        this.progressAlarms = report.progress;
+      } else {
+        this.progressSamples = report.progress;
+      }
+      this.report = JSON.stringify(report, undefined, 2);
+    },
+    onError(report) {
+      this.report = JSON.stringify(report, undefined, 2);
+      this.$notify({
+        type: 'error',
+        title: 'Erreur',
+        text: report.errors
+      });
+    },
+    onComplete() {
+      this.progressSamples = 100;
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: 'Import réussi'
+      });
     },
     onReset(e) {
       e.preventDefault();

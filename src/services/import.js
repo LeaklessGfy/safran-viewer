@@ -11,20 +11,19 @@ export const ImportServiceFactory = (local, db) => {
 };
 
 class RemoteImportService {
-  _samples;
-  _alarms;
+  _subject;
   _formData;
+  _source;
 
   async init(experiment, samplesFile, alarmsFile) {
-    this._samples = new Subject();
-    this._alarms = new Subject();
+    this._subject = new Subject();
 
     this._formData = new FormData();
     this._formData.append('experiment', JSON.stringify(experiment));
     this._formData.append('samples', samplesFile);
     this._formData.append('alarms', alarmsFile);
 
-    return [this._samples, this._alarms];
+    return this._subject;
   }
 
   async import() {
@@ -35,28 +34,28 @@ class RemoteImportService {
     .then(response => {
       return response.json();
     })
-    .then(response => {
-      if (response.status === 'failure') {
-        throw new Error(Object.values(response.errors).join(','));
+    .then(report => {
+      if (report.status === 'failure') {
+        this._subject.error(report);
+        throw new Error(Object.values(report.errors).join(','));
       }
 
-      const source = new EventSource('http://localhost:8888/events?channel=' + response.channel);
-      source.onmessage = event => {
-        const data = JSON.parse(event.data);
-        console.log(data);
-        const subject = data.title === 'Alarms' ? this._alarms : this._samples;
-        subject.next(data.progress);
-        if (data.status === 'success') {
-          return subject.complete();
-        } else if (data.status === 'failure') {
-          return subject.error(data.errors);
-        }
-      };
-    })
-    .catch(err => {
-      this._samples.error(err);
-      throw err;
+      this._source = new EventSource('http://localhost:8888/events?channel=' + report.channel);
+      this._source.onmessage = this.onMessage.bind(this);
     });
+  }
+
+  onMessage(event) {
+    const data = JSON.parse(event.data);
+    this._subject.next(data);
+
+    if (data.status === 'success') {
+      this._source.close();
+      return this._subject.complete();
+    } else if (data.status === 'failure') {
+      this._source.close();
+      return this._subject.error(data);
+    }
   }
 }
 

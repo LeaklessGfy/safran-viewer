@@ -310,9 +310,9 @@ export default class Database {
     this._loadingSubject.next(true);
     return Promise.all([
       this._db.query(`DELETE FROM experiments WHERE "id"=${Influx.escape.stringLit(id)};`),
-      this._db.query(`DELETE FROM measures WHERE "experimentId"=${Influx.escape.stringLit(id)};`),
-      this._db.query(`DELETE FROM samples WHERE "experimentId"=${Influx.escape.stringLit(id)};`),
-      this._db.query(`DELETE FROM alarms WHERE "experimentId"=${Influx.escape.stringLit(id)};`)
+      this._db.query(`DELETE FROM measures WHERE "experimentID"=${Influx.escape.stringLit(id)};`),
+      this._db.query(`DELETE FROM samples WHERE "experimentID"=${Influx.escape.stringLit(id)};`),
+      this._db.query(`DELETE FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(id)};`)
     ])
     .catch(err => {
       this._errorsSubject.next(err);
