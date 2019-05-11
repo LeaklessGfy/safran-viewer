@@ -77,7 +77,11 @@ export default class Database {
       this._db.query('SELECT count("name") FROM experiments;')
     ])
     .then(values => {
-      const result = values[0];
+      const result = values[0].map(r => ({
+        ...r,
+        startDate: stringToDate(r.startDate),
+        endDate: stringToDate(r.endDate)
+      }));
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
       result.limit = this._limit;

@@ -2,7 +2,7 @@
   <b-navbar
     toggleable="lg"
     type="dark"
-    variant="info"
+    variant="dark"
   >
     <b-navbar-brand href="#/">
       Safran Viewer
@@ -15,6 +15,9 @@
       is-nav
     >
       <b-navbar-nav>
+        <b-nav-item href="#/dashboard">
+          Dashboard
+        </b-nav-item>
         <b-nav-item href="#/protocol">
           Protocole
         </b-nav-item>

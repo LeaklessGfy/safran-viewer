@@ -1,10 +1,12 @@
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
+import am4themes_dark from '@amcharts/amcharts4/themes/dark';
 import { addMilliseconds } from 'date-fns';
 import { dateToTime } from './date';
 
 am4core.useTheme(am4themes_animated);
+am4core.useTheme(am4themes_dark);
 
 const TimeTooltip = '<center><strong>{legend}</strong></center>';
 
@@ -21,6 +23,7 @@ export const ChartContext = {};
 export default class ChartService {
   _date;
   _observer = {
+    onReady: [],
     onZoom: [],
     onDate: [],
     onSelect: []
@@ -38,12 +41,12 @@ export default class ChartService {
   _range;
   _ranges = {};
 
-  constructor(ref, startDate, endDate) {
+  constructor(ref, date, startTime, endTime) {
     this._initChart(ref);
     this._initTime();
     this._initTimeline();
     this._initEvents();
-    this.rescale(startDate, endDate);
+    this.rescale(date, startTime, endTime);
   }
 
   _initChart(ref) {
@@ -61,9 +64,16 @@ export default class ChartService {
     this._chart.legend = new am4charts.Legend();
     this._chart.cursor = new am4charts.XYCursor();
     this._chart.cursor.maxPanOut = 0;
+    this._chart.cursor.lineX.stroke = am4core.color('#8F3985');
+    this._chart.cursor.lineX.strokeWidth = 4;
+    this._chart.cursor.lineX.strokeOpacity = 1;
+    this._chart.cursor.lineX.strokeDasharray = '';
+    this._chart.cursor.lineY.disabled = true;
 
     this._dateAxis = this._chart.xAxes.push(new am4charts.DateAxis());
     this._dateAxis.baseInterval = { count: 1, timeUnit: 'second' };
+
+    this._chart.padding(0, -14, 0, -24);
   }
 
   _initTime() {
@@ -106,6 +116,7 @@ export default class ChartService {
     this._chart.events.on('track', this._onTrack.bind(this));
     this._chart.events.on('hit', this._onClickChart.bind(this));
     this._chart.events.on('doublehit', this._onDoubleClickChart.bind(this));
+    this._chart.events.on('ready', this._onReady.bind(this));
     this._chart.series.events.on('removed', () => {
       this._chart.invalidateData();
     });
@@ -250,16 +261,16 @@ export default class ChartService {
     }
   }
 
-  rescale(startDate, endDate) {
-    this._date = startDate;
-    this._dateAxis.min = startDate;
-    this._dateAxis.max = endDate;
+  rescale(date, startTime, endTime) {
+    this._date = date;
+    this._dateAxis.min = startTime;
+    this._dateAxis.max = endTime;
     this._timeSeries.data = [
-      { value: 1, time: startDate, legend: 'Start' },
-      { value: 1, time: endDate, legend: 'End' }
+      { value: 1, time: startTime, legend: 'Start' },
+      { value: 1, time: endTime, legend: 'End' }
     ];
     this._timelineSeries.data = [{
-      time: startDate,
+      time: startTime,
       timeline: 10
     }];
     this._chart.invalidateData();
@@ -368,6 +379,10 @@ export default class ChartService {
     series.invalidateData();
   }
 
+  addOnReadyListener(listener) {
+    this._observer.onReady.push(listener);
+  }
+
   addOnZoomListener(listener) {
     this._observer.onZoom.push(listener);
   }
@@ -424,17 +439,23 @@ export default class ChartService {
     this._position = this._dateAxis.positionToDate(axisPos);
   }
 
-  _onClickChart() {
-    if (this._observer.onDate.length < 1) {
-      return;
+  _onReady() {
+    if (this._observer.onReady.length > 0) {
+      for (let observer of this._observer.onReady) {
+        observer();
+      }
     }
+  }
 
+  _onClickChart() {
     const clickDate = new Date(this._position);
     this._timelineSeries.data[0].time = clickDate;
     this._timelineSeries.invalidateData();
 
-    for (let observer of this._observer.onDate) {
-      observer(clickDate);
+    if (this._observer.onDate.length > 0) {
+      for (let observer of this._observer.onDate) {
+        observer(clickDate);
+      }
     }
   }
 

@@ -63,8 +63,10 @@ export default {
 </script>
 
 <style>
+/*
 .chart {
   width: 100%;
   height: 500px;
 }
+*/
 </style>
