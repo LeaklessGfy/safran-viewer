@@ -2,45 +2,25 @@
   <b-container fluid>
     <b-row>
       <b-col>
-        <b-card no-body bg-variant="dark" text-variant="white">
-          <b-tabs card class="dark" active-nav-item-class="text-dark">
-            <b-tab title="Plugins" active title-link-class="text-light">
+        <b-card
+          no-body
+          bg-variant="dark"
+          text-variant="white"
+        >
+          <b-tabs
+            card
+            class="dark"
+            active-nav-item-class="text-dark"
+          >
+            <b-tab
+              title="Plugins"
+              active
+              title-link-class="text-light"
+            >
               <b-card-text>Tab Contents 1</b-card-text>
-            </b-tab>
-            <b-tab title="Measures" title-link-class="text-light">
-              <b-card-text>
-                <experiments />
-              </b-card-text>
             </b-tab>
           </b-tabs>
         </b-card>
-
-        <b-button-group>
-          <b-button
-            v-b-toggle.plugin
-            variant="dark"
-          >
-            <v-icon name="plus-square" /> Plugin
-          </b-button>
-        </b-button-group>
-
-        <b-collapse
-          id="plugin"
-          class="mt-2"
-        >
-          <b-row>
-            <b-col>
-              <b-card
-                bg-variant="dark"
-                text-variant="warning"
-                title="Chart"
-                style="max-width:10rem;cursor:pointer;"
-                class="text-center"
-                @click="addPlugin"
-              />
-            </b-col>
-          </b-row>
-        </b-collapse>
       </b-col>
     </b-row>
 
@@ -83,22 +63,24 @@
 <script>
 import VueGridLayout from 'vue-grid-layout';
 import ChartPlugin from './plugins/Chart';
-import Experiments from '@/components/shared/Experiments';
 
 export default {
   name: 'Dashboard',
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
-    chart: ChartPlugin,
-    experiments: Experiments
+    chart: ChartPlugin
   },
   data() {
     return {
       plugins: [
-        { x: 0, y: 0, w: 5, h: 8, i: 0, static: false, component: 'chart' }
+        { x: 0, y: 0, w: 5, h: 8, i: 0, static: false, component: 'chart' },
+        { x: 5, y: 0, w: 5, h: 8, i: 1, static: false, component: 'timeline'}
       ]
     };
+  },
+  created() {
+    this.$store.dispatch('fetchExperiments');
   },
   methods: {
     addPlugin() {

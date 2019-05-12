@@ -135,6 +135,7 @@ export const store = new Vuex.Store({
     benchs: [],
     campaigns: [],
     measures: [],
+    measuresSelector: {},
     protocols: {
       iena: {
         ip: '',
@@ -174,6 +175,12 @@ export const store = new Vuex.Store({
     SET_MEASURES(state, measures) {
       state.measures = measures;
     },
+    SET_MEASURES_SELECTOR(state, { experimentId, page, measures }) {
+      state.measuresSelector = {
+        ...state.measuresSelector,
+        [experimentId + page]: measures
+      };
+    },
     SET_PROTOCOLS(state, protocols) {
       state.protocols = protocols;
     },
@@ -200,10 +207,24 @@ export const store = new Vuex.Store({
         commit('SET_CAMPAIGNS', campaigns);
       });
     },
-    fetchMeasures({ commit }, { experimentId, page }) {
+    fetchMeasures({ state, commit }, { experimentId, page }) {
+      if (state.measuresSelector[experimentId + page]) {
+        return commit('SET_MEASURES', state.measuresSelector[experimentId + page]);
+      }
       DB.fetchMeasures(experimentId, page)
       .then(measures => {
         commit('SET_MEASURES', measures);
+        commit('SET_MEASURES_SELECTOR', { experimentId, page, measures });
+      });
+    },
+    fetchSamples({ state, commit }, measureId) {
+      if (state.samplesSelector[measureId]) {
+        return commit('SET_SAMPLES', state.samplesSelector[measureId]);
+      }
+      DB.fetchSamples(measureId)
+      .then(samples => {
+        commit('SET_SAMPLES', samples);
+        commit('SET_SAMPLES_SELECTOR', { measureId, samples });
       });
     },
     fetchProtocols({ commit }) {

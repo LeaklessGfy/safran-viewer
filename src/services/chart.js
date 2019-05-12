@@ -73,7 +73,7 @@ export default class ChartService {
     this._dateAxis = this._chart.xAxes.push(new am4charts.DateAxis());
     this._dateAxis.baseInterval = { count: 1, timeUnit: 'second' };
 
-    this._chart.padding(0, -14, 0, -24);
+    this._chart.padding(0, -10, 0, -10);
   }
 
   _initTime() {

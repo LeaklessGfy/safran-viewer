@@ -37,34 +37,35 @@
       </b-button>
     </b-button-group>
 
-    <div v-show="!ready">
-      Chargement...
-    </div>
-
     <div
-      v-show="!manage && selectedExperiment"
+      v-show="!manage && experiment"
       ref="chart"
       class="chart"
     />
     <div
-      v-if="manage || !selectedExperiment"
-      class="mb-4 px-2 mw-100 mh-100"
+      v-show="manage || !experiment"
+      class="mb-4 px-4 pb-3 mw-100 mh-100"
       style="overflow-y:scroll;"
     >
-      <b-form-group label="Experiment">
+      <b-form-group label="Essai">
         <b-form-select
-          v-model="selectedExperiment"
+          v-model="experiment"
           :options="experiments"
+          @change="onExperiment"
         />
       </b-form-group>
 
-      <measures
-        v-if="selectedExperiment"
-        :experiment="selectedExperiment.id"
-        :selected-measures="selectedMeasures"
-        :on-cancel-measures="onCancelMeasures"
-        :on-submit-measures="onSubmitMeasures"
-      />
+      <b-form-group
+        v-if="experiment"
+        label="Mesures"
+      >
+        <measures
+          :experiment="experiment.id"
+          :selected-measures="selectedMeasures"
+          :on-cancel-measures="onCancelMeasures"
+          :on-submit-measures="onSubmitMeasures"
+        />
+      </b-form-group>
     </div>
   </div>
 </template>
@@ -94,38 +95,31 @@ export default {
   data() {
     return {
       service: null,
-      ready: false,
-      manage: false,
-      experiments: [],
-      selectedExperiment: null,
+      manage: true,
+      experiment: null,
       selectedMeasures: []
     };
   },
-  created() {
-    this.$db.fetchExperiments()
-    .then(experiments => {
-      this.experiments = experiments.map(experiment => ({
+  computed: {
+    experiments() {
+      return this.$store.state.experiments.map(experiment => ({
         value: experiment,
         text: experiment.reference + ' ' + experiment.name
       }));
-    });
-  },
-  mounted() {
-    if (!this.selectedExperiment) {
-      this.ready = true;
-      this.manage = true;
-    } else {
-      this.createService();
     }
   },
   methods: {
     managePlugin() {
-      if (this.manage && !this.selectedExperiment) {
+      if (!this.experiment) {
         return;
       }
       this.manage = !this.manage;
+    },
+    onExperiment() {
       if (this.service === null) {
         this.createService();
+      } else {
+        this.service.rescale(this.experiment.startDate, this.experiment.startDate, this.experiment.endDate);
       }
     },
     onCancelMeasures() {
@@ -151,15 +145,13 @@ export default {
       this.manage = false;
     },
     async createService() {
-      this.ready = false;
       this.service = new ChartService(
         this.$refs.chart,
-        this.selectedExperiment.startDate,
-        this.selectedExperiment.startDate,
-        this.selectedExperiment.endDate
+        this.experiment.startDate,
+        this.experiment.startDate,
+        this.experiment.endDate
       );
       this.service.addOnReadyListener(async () => {
-        this.ready = true;
         Promise.resolve();
       });
     }

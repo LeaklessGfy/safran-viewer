@@ -4,8 +4,7 @@
       <b-list-group-item
         v-for="measure in measures"
         :key="measure.id"
-        variant="dark"
-        class="d-flex justify-content-between align-items-center"
+        class="d-flex justify-content-between align-items-center text-dark"
       >
         {{ measure.name + (measure.unit ? ' - ' + measure.unit : '') }}
         <b-button
@@ -76,14 +75,18 @@ export default {
   },
   data() {
     return {
-      measures: [],
       tmpMeasures: [],
       currentPage: 1
     };
   },
+  computed: {
+    measures() {
+      return this.$store.state.measures;
+    }
+  },
   created() {
     this.tmpMeasures = this.selectedMeasures.slice();
-    this.fetchMeasures();
+    this.$store.dispatch('fetchMeasures', { experimentId: this.experiment, page: this.currentPage });
   },
   methods: {
     addMeasure(measure) {
@@ -94,13 +97,7 @@ export default {
     },
     onPageChange(page) {
       this.currentPage = page;
-      this.fetchMeasures();
-    },
-    fetchMeasures() {
-      this.$db.fetchMeasures(this.experiment, this.currentPage)
-      .then(measures => {
-        this.measures = measures;
-      });
+      this.$store.dispatch('fetchMeasures', { experimentId: this.experiment, page });
     },
     onCancel() {
       this.tmpMeasures = this.selectedMeasures.slice();
