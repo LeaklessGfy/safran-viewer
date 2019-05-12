@@ -8,5 +8,10 @@
 
 <script>
 export default {
-}
+  data() {
+    return {
+      timeline: []
+    };
+  }
+};
 </script>

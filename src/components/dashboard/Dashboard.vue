@@ -62,14 +62,16 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
-import ChartPlugin from './plugins/Chart';
+import Chart from './plugins/Chart';
+import Timeline from './plugins/Timeline';
 
 export default {
   name: 'Dashboard',
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
-    chart: ChartPlugin
+    chart: Chart,
+    timeline: Timeline
   },
   data() {
     return {
