@@ -2,6 +2,19 @@
   <b-container fluid>
     <b-row>
       <b-col>
+        <b-card no-body bg-variant="dark" text-variant="white">
+          <b-tabs card class="dark" active-nav-item-class="text-dark">
+            <b-tab title="Plugins" active title-link-class="text-light">
+              <b-card-text>Tab Contents 1</b-card-text>
+            </b-tab>
+            <b-tab title="Measures" title-link-class="text-light">
+              <b-card-text>
+                <experiments />
+              </b-card-text>
+            </b-tab>
+          </b-tabs>
+        </b-card>
+
         <b-button-group>
           <b-button
             v-b-toggle.plugin
@@ -70,13 +83,15 @@
 <script>
 import VueGridLayout from 'vue-grid-layout';
 import ChartPlugin from './plugins/Chart';
+import Experiments from '@/components/shared/Experiments';
 
 export default {
   name: 'Dashboard',
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
-    chart: ChartPlugin
+    chart: ChartPlugin,
+    experiments: Experiments
   },
   data() {
     return {
