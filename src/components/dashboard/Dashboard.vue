@@ -52,9 +52,12 @@
               :toggle-plugin="togglePlugin"
               :remove-plugin="removePlugin"
             >
-              <component
-                :is="plugin.component"
-              />
+              <template v-slot:default="slotProps">
+                <component
+                  :is="plugin.component"
+                  :plugin="slotProps"
+                />
+              </template>
             </plugin>
           </grid-item>
         </grid-layout>

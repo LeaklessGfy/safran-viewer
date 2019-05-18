@@ -38,8 +38,6 @@
       </b-button>
     </b-button-group>
 
-    <slot v-show="!config" />
-
     <div
       v-show="config || !experiment"
       class="mb-4 px-4 pb-3 mw-100 mh-100"
@@ -64,6 +62,13 @@
         />
       </b-form-group>
     </div>
+
+    <slot
+      v-show="!config"
+      :experiment="experiment"
+      :selected-measures="selectedMeasures"
+      :removed-measures="removedMeasures"
+    />
   </div>
 </template>
 

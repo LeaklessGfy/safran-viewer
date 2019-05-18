@@ -10,16 +10,8 @@ import ChartService from '@/services/chart';
 
 export default {
   props: {
-    experiment: {
+    plugin: {
       type: Object,
-      required: true
-    },
-    selectedMeasures: {
-      type: Array,
-      required: true
-    },
-    removedMeasures: {
-      type: Array,
       required: true
     }
   },
@@ -30,6 +22,9 @@ export default {
     };
   },
   mounted() {
+    if (this.plugin.experiment === null) {
+      return;
+    }
     if (this.service === null) {
       this.createService();
     } else {
@@ -40,16 +35,20 @@ export default {
     async createService() {
       this.service = new ChartService(
         this.$refs.chart,
-        this.experiment.startDate,
-        this.experiment.startDate,
-        this.experiment.endDate
+        this.plugin.experiment.startDate,
+        this.plugin.experiment.startDate,
+        this.plugin.experiment.endDate
       );
       this.service.addOnReadyListener(() => Promise.resolve());
     },
     async updateService() {
-      this.service.rescale(this.experiment.startDate, this.experiment.startDate, this.experiment.endDate);
+      this.service.rescale(
+        this.plugin.experiment.startDate,
+        this.plugin.experiment.startDate,
+        this.plugin.experiment.endDate
+      );
       
-      for (let measure of this.selectedMeasures) {
+      for (let measure of this.plugin.selectedMeasures) {
         if (this.formerMeasures.some(m => m.id === measure.id)) {
           continue;
         }
@@ -57,7 +56,7 @@ export default {
         this.service.addMeasure(measure, samples);
       }
       
-      for (let measure of this.removedMeasures) {
+      for (let measure of this.plugin.removedMeasures) {
         this.service.removeMeasure(measure);
       }
     }
