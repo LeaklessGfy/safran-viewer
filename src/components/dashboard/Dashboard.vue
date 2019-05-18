@@ -47,12 +47,15 @@
             :i="plugin.i"
             :static="plugin.static"
           >
-            <component
-              :is="plugin.component"
+            <plugin
               :plugin="plugin"
               :toggle-plugin="togglePlugin"
               :remove-plugin="removePlugin"
-            />
+            >
+              <component
+                :is="plugin.component"
+              />
+            </plugin>
           </grid-item>
         </grid-layout>
       </b-col>
@@ -62,6 +65,7 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
+import Plugin from './Plugin';
 import Chart from './plugins/Chart';
 import Timeline from './plugins/Timeline';
 
@@ -70,6 +74,7 @@ export default {
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
+    plugin: Plugin,
     chart: Chart,
     timeline: Timeline
   },
@@ -77,7 +82,7 @@ export default {
     return {
       plugins: [
         { x: 0, y: 0, w: 5, h: 8, i: 0, static: false, component: 'chart' },
-        { x: 5, y: 0, w: 5, h: 8, i: 1, static: false, component: 'timeline'}
+        { x: 5, y: 0, w: 5, h: 8, i: 1, static: false, component: 'timeline' }
       ]
     };
   },

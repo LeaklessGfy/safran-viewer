@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="w-100 h-100">
     <b-button
       size="sm"
       variant="outline-dark"
@@ -37,6 +37,8 @@
         <v-icon name="minus" />
       </b-button>
     </b-button-group>
+
+    <slot v-show="!config" />
 
     <div
       v-show="config || !experiment"
@@ -84,7 +86,9 @@ export default {
   data() {
     return {
       config: true,
-      experiment: null
+      experiment: null,
+      selectedMeasures: [],
+      removedMeasures: []
     };
   },
   computed: {
@@ -101,6 +105,14 @@ export default {
         return;
       }
       this.config = !this.config;
+    },
+    onCancelMeasures() {
+      this.config = false;
+    },
+    onSubmitMeasures(selectedMeasures, removedMeasures) {
+      this.selectedMeasures = selectedMeasures;
+      this.removedMeasures = removedMeasures;
+      this.config = false;
     }
   }
 };
