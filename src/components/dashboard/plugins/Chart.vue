@@ -37,6 +37,9 @@ export default {
           this.service.addMeasure(measure, samples);
         }
       });
+      this.service.addOnDateListener(date => {
+        this.$store.commit('SET_CURRENT_DATE', date);
+      });
     }
   }
 };

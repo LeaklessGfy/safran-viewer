@@ -2,6 +2,8 @@ import { parse, format, getTime } from 'date-fns';
 
 export const dateToString = date => format(date, 'DD/MM/YYYY HH:mm:ss.SSS');
 
+export const dateToISO = date => format(date, 'YYYY-MM-DDTHH:mm:ss.SSS') + 'Z';
+
 export const dateToTimestamp = date => getTime(date);
 
 export const stringToDate = str => parse(str);

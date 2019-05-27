@@ -136,7 +136,7 @@ export const store = new Vuex.Store({
     campaigns: [],
     measures: [],
     measuresSelector: {},
-    currentTime: null,
+    currentDate: null,
     protocols: {
       iena: {
         ip: '',
@@ -181,6 +181,9 @@ export const store = new Vuex.Store({
         ...state.measuresSelector,
         [experimentId + page]: measures
       };
+    },
+    SET_CURRENT_DATE(state, currentDate) {
+      state.currentDate = currentDate;
     },
     SET_PROTOCOLS(state, protocols) {
       state.protocols = protocols;

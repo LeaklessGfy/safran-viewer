@@ -1,6 +1,7 @@
 <template>
   <b-table
     striped
+    dark
     hover
     :items="timeline"
   />
@@ -20,21 +21,30 @@ export default {
     };
   },
   computed: {
-    currentTime() {
-      return this.$store.state.currentTime;
+    currentDate() {
+      return this.$store.state.currentDate;
     }
   },
-  mounted() {
-    this.timeline = this.plugin.selectedMeasures.map(measure => {
-      const data = 1;
-      
-      return {
-        measure: measure.name,
-        type: measure.type,
-        unit: measure.unit,
-        value: data ? data.valueY : '-'
-      };
-    });
+  watch: {
+    currentDate(newDate) {
+      this.updateTimeline(newDate);
+    }  
+  },
+  methods: {
+    async updateTimeline(date) {
+      const timeline = [];
+      for (let measure of this.plugin.selectedMeasures) {
+        const data = await this.$db.fetchSample(measure.id, date);
+
+        timeline.push({
+          measure: measure.name,
+          type: measure.type,
+          unit: measure.unit,
+          value: data ? data : '-'
+        });
+      }
+      this.timeline = timeline;
+    }
   }
 };
 </script>

@@ -1,8 +1,8 @@
 import * as Influx from 'influx';
 import uuidv4 from 'uuid/v4';
+import { subSeconds } from 'date-fns';
 import Schema from './schema';
-import { dateToTimestamp, timeToTimestamp } from '@/services/date';
-import { stringToDate } from '../../../services/date';
+import { dateToTimestamp, timeToTimestamp, stringToDate, dateToISO } from '@/services/date';
 
 const DATABASE_NAME = 'safran_db';
 
@@ -126,6 +126,18 @@ export default class Database {
         value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
         return value;
       });
+    });
+  }
+
+  fetchSample(measureId, date) {
+    return this._query(
+      `SELECT first(value) FROM samples
+      WHERE "measureID"=${Influx.escape.stringLit(measureId)}
+      AND time >= '${dateToISO(subSeconds(date, 1))}' AND time <= '${dateToISO(date)}'
+      GROUP BY time(100ms) fill(previous);`)
+    .then(values => {
+      const value = values.find(value => value.first !== null);
+      return value ? value.first : null;
     });
   }
 
