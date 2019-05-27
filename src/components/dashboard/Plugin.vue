@@ -64,7 +64,7 @@
     </div>
 
     <slot
-      v-show="!config"
+      v-if="!config"
       :experiment="experiment"
       :selected-measures="selectedMeasures"
       :removed-measures="removedMeasures"
@@ -73,7 +73,12 @@
 </template>
 
 <script>
+import Measures from '@/components/shared/Measures';
+
 export default {
+  components: {
+    measures: Measures
+  },
   props: {
     plugin: {
       type: Object,

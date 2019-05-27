@@ -17,19 +17,11 @@ export default {
   },
   data() {
     return {
-      service: null,
-      formerMeasures: []
+      service: null
     };
   },
   mounted() {
-    if (this.plugin.experiment === null) {
-      return;
-    }
-    if (this.service === null) {
-      this.createService();
-    } else {
-      this.updateService();
-    }
+    this.createService();
   },
   methods: {
     async createService() {
@@ -39,26 +31,12 @@ export default {
         this.plugin.experiment.startDate,
         this.plugin.experiment.endDate
       );
-      this.service.addOnReadyListener(() => Promise.resolve());
-    },
-    async updateService() {
-      this.service.rescale(
-        this.plugin.experiment.startDate,
-        this.plugin.experiment.startDate,
-        this.plugin.experiment.endDate
-      );
-      
-      for (let measure of this.plugin.selectedMeasures) {
-        if (this.formerMeasures.some(m => m.id === measure.id)) {
-          continue;
+      this.service.addOnReadyListener(async () => {
+        for (let measure of this.plugin.selectedMeasures) {
+          const samples = await this.$db.fetchSamples(measure.id);
+          this.service.addMeasure(measure, samples);
         }
-        const samples = await this.$db.fetchSamples(measure.id);
-        this.service.addMeasure(measure, samples);
-      }
-      
-      for (let measure of this.plugin.removedMeasures) {
-        this.service.removeMeasure(measure);
-      }
+      });
     }
   }
 };

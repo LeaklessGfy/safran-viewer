@@ -136,6 +136,7 @@ export const store = new Vuex.Store({
     campaigns: [],
     measures: [],
     measuresSelector: {},
+    currentTime: null,
     protocols: {
       iena: {
         ip: '',
