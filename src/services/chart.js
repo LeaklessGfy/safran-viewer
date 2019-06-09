@@ -1,12 +1,14 @@
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
+import am4themes_dark from '@amcharts/amcharts4/themes/dark';
 import { addMilliseconds } from 'date-fns';
 import { dateToTime } from './date';
 
 am4core.useTheme(am4themes_animated);
+am4core.useTheme(am4themes_dark);
 
-const TimeTooltip = `<center><strong>{legend}</strong></center>`;
+const TimeTooltip = '<center><strong>{legend}</strong></center>';
 
 const AlarmTooltip = `<center><strong>{name}</strong></center>
 <table>
@@ -14,11 +16,14 @@ const AlarmTooltip = `<center><strong>{name}</strong></center>
 <tr><th align="left">Message</th><td>{message}</td></tr>
 </table>`;
 
-const MeasureTooltip = `<center><strong>{name}</strong><br><b>{valueY}&nbsp;{unit}</b></center>`;
+const MeasureTooltip = '<center><strong>{name}</strong><br><b>{valueY}&nbsp;{unit}</b></center>';
+
+export const ChartContext = {};
 
 export default class ChartService {
   _date;
   _observer = {
+    onReady: [],
     onZoom: [],
     onDate: [],
     onSelect: []
@@ -36,12 +41,12 @@ export default class ChartService {
   _range;
   _ranges = {};
 
-  constructor(ref, startDate, endDate) {
+  constructor(ref, date, startTime, endTime) {
     this._initChart(ref);
     this._initTime();
     this._initTimeline();
     this._initEvents();
-    this.rescale(startDate, endDate);
+    this.rescale(date, startTime, endTime);
   }
 
   _initChart(ref) {
@@ -59,9 +64,16 @@ export default class ChartService {
     this._chart.legend = new am4charts.Legend();
     this._chart.cursor = new am4charts.XYCursor();
     this._chart.cursor.maxPanOut = 0;
+    this._chart.cursor.lineX.stroke = am4core.color('#8F3985');
+    this._chart.cursor.lineX.strokeWidth = 4;
+    this._chart.cursor.lineX.strokeOpacity = 1;
+    this._chart.cursor.lineX.strokeDasharray = '';
+    this._chart.cursor.lineY.disabled = true;
 
     this._dateAxis = this._chart.xAxes.push(new am4charts.DateAxis());
     this._dateAxis.baseInterval = { count: 1, timeUnit: 'second' };
+
+    this._chart.padding(0, -10, 0, -10);
   }
 
   _initTime() {
@@ -104,6 +116,7 @@ export default class ChartService {
     this._chart.events.on('track', this._onTrack.bind(this));
     this._chart.events.on('hit', this._onClickChart.bind(this));
     this._chart.events.on('doublehit', this._onDoubleClickChart.bind(this));
+    this._chart.events.on('ready', this._onReady.bind(this));
     this._chart.series.events.on('removed', () => {
       this._chart.invalidateData();
     });
@@ -163,8 +176,9 @@ export default class ChartService {
     series.tensionX = 1;
     series.minBulletDistance = 15;
     series.data = this._normalizeSamples(samples, measure.unit);
-    series.stroke = this._chart.colors.list[index]; // %3 car on a que 3 couleurs max
+    series.stroke = this._chart.colors.list[index];
     series.fill = this._chart.colors.list[index];
+    series.dummyData = series.data.map(data => Object.assign({}, data));
 
     valueAxis.maxPrecision = 0;
     valueAxis.renderer.line.strokeOpacity = 1;
@@ -247,16 +261,16 @@ export default class ChartService {
     }
   }
 
-  rescale(startDate, endDate) {
-    this._date = startDate;
-    this._dateAxis.min = startDate;
-    this._dateAxis.max = endDate;
+  rescale(date, startTime, endTime) {
+    this._date = date;
+    this._dateAxis.min = startTime;
+    this._dateAxis.max = endTime;
     this._timeSeries.data = [
-      { value: 1, time: startDate, legend: 'Start' },
-      { value: 1, time: endDate, legend: 'End' }
+      { value: 1, time: startTime, legend: 'Start' },
+      { value: 1, time: endTime, legend: 'End' }
     ];
     this._timelineSeries.data = [{
-      time: startDate,
+      time: startTime,
       timeline: 10
     }];
     this._chart.invalidateData();
@@ -299,16 +313,16 @@ export default class ChartService {
     }
   }
 
-  addRange(id, measure, startDate, endDate, operation, value) {
-    const series = this._measuresSeries[measure.id];
+  addRange(modification) {
+    const series = this._measuresSeries[modification.measure];
     
     if (!series) {
       throw new Error('Series not found');
     }
 
     const range = this._dateAxis.createSeriesRange(series);
-    range.value = startDate;
-    range.endValue = endDate;
+    range.value = modification.startDate;
+    range.endValue = modification.endDate;
     range.contents.stroke = am4core.color('#FA8072');
     range.contents.fill = am4core.color('#FA8072');
     range.contents.fillOpacity = 0.5;
@@ -316,38 +330,57 @@ export default class ChartService {
     range.axisFill.tooltipText = 'Modification';
     range.axisFill.interactionsEnabled = true;
     range.axisFill.isMeasured = true;
-    range.dummyData = measure.id;
-    this._ranges[id] = range;
+    range.dummyData = modification;
+    this._ranges[modification.id] = range;
 
-    // Backing up data
-    series.dummyData = series.data.map(data => Object.assign({}, data));
-    series.data = series.data.map(data => {
-      if (data.time >= startDate && data.time <= endDate) {
-        if (operation === 'ADD') {
-          data.value += value;
+    series.data = series.data.map(item => {
+      if (item.time.getTime() >= modification.startDate && item.time.getTime() <= modification.endDate) {
+        if (modification.operation === 'ADD') {
+          item.value += modification.value; // CAREFULL
         } else {
-          data.value = value;
+          item.value = modification.value;
         }
       }
-      return data;      
+      return item;      
     });
 
     series.invalidateData();
   }
 
-  removeRange(id) {
-    const range = this._ranges[id];
+  removeRange(modification) {
+    const range = this._ranges[modification.id];
+    delete this._ranges[modification.id];
 
     if (!range) {
-      return
+      return;
     }
 
-    const series = this._measuresSeries[range.dummyData];
+    const series = this._measuresSeries[range.dummyData.measure];
     range.contents.fillOpacity = 0;
     range.contents.stroke = series.stroke;
-    delete this._ranges[id];
-    series.data = series.dummyData;
+    
+    let data = series.dummyData.map(item => Object.assign({}, item));
+    Object.values(this._ranges).forEach(r => {
+      if (r.dummyData.measure === range.dummyData.measure) {
+        data = data.map(item => {
+          if (item.time.getTime() >= r.dummyData.startDate && item.time.getTime() <= r.dummyData.endDate) {
+            if (r.dummyData.operation === 'ADD') {
+              item.value += r.dummyData.value; // CARREFUL
+            } else {
+              item.value = r.dummyData.value;
+            }
+          }
+          return item;
+        });
+      }
+    });
+    series.data = data;
+    
     series.invalidateData();
+  }
+
+  addOnReadyListener(listener) {
+    this._observer.onReady.push(listener);
   }
 
   addOnZoomListener(listener) {
@@ -406,17 +439,23 @@ export default class ChartService {
     this._position = this._dateAxis.positionToDate(axisPos);
   }
 
-  _onClickChart() {
-    if (this._observer.onDate.length < 1) {
-      return;
+  _onReady() {
+    if (this._observer.onReady.length > 0) {
+      for (let observer of this._observer.onReady) {
+        observer();
+      }
     }
+  }
 
+  _onClickChart() {
     const clickDate = new Date(this._position);
     this._timelineSeries.data[0].time = clickDate;
     this._timelineSeries.invalidateData();
 
-    for (let observer of this._observer.onDate) {
-      observer(clickDate);
+    if (this._observer.onDate.length > 0) {
+      for (let observer of this._observer.onDate) {
+        observer(clickDate);
+      }
     }
   }
 

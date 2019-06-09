@@ -3,7 +3,63 @@ import * as Comlink from 'comlinkjs';
 
 const SAMPLE_STACK_INSERT = 500;
 
-export default class ImportService {
+export const ImportServiceFactory = (local, db) => {
+  if (local) {
+    return new LocalImportService(db);
+  }
+  return new RemoteImportService();
+};
+
+class RemoteImportService {
+  _subject;
+  _formData;
+  _source;
+
+  async init(experiment, samplesFile, alarmsFile) {
+    this._subject = new Subject();
+
+    this._formData = new FormData();
+    this._formData.append('experiment', JSON.stringify(experiment));
+    this._formData.append('samples', samplesFile);
+    this._formData.append('alarms', alarmsFile);
+
+    return this._subject;
+  }
+
+  async import() {
+    fetch('http://localhost:8888/upload', {
+      method: 'POST',
+      body: this._formData
+    })
+    .then(response => {
+      return response.json();
+    })
+    .then(report => {
+      if (report.status === 'failure') {
+        this._subject.error(report);
+        throw new Error(Object.values(report.errors).join(','));
+      }
+
+      this._source = new EventSource('http://localhost:8888/events?channel=' + report.channel);
+      this._source.onmessage = this.onMessage.bind(this);
+    });
+  }
+
+  onMessage(event) {
+    const data = JSON.parse(event.data);
+    this._subject.next(data);
+
+    if (data.status === 'success') {
+      this._source.close();
+      return this._subject.complete();
+    } else if (data.status === 'failure') {
+      this._source.close();
+      return this._subject.error(data);
+    }
+  }
+}
+
+class LocalImportService {
   _db;
   _worker;
 
@@ -36,11 +92,21 @@ export default class ImportService {
   }
 
   async import() {
-    await this.importExperiment();
-    await this.importMeasures();
+    try {
+      await this.importExperiment();
+      await this.importMeasures();
+    } catch (err) {
+      this._subject.error(err);
+      throw err;
+    }
+
     Promise.all([this.importSamples(), this.importAlarms()])
     .then(() => {
       this._subject.complete();
+    })
+    .catch(err => {
+      this._subject.error(err);
+      throw err;
     });
   }
 
@@ -55,8 +121,8 @@ export default class ImportService {
   }
 
   async importMeasures() {
-    const measures = await this._parser.parseMeasures();
     try {
+      const measures = await this._parser.parseMeasures();
       const measuresId = await this._db.insertMeasures(this._idHolder.experiment, measures);
       if (!measuresId) {
         this._db.removeExperiment(this._idHolder.experiment);
@@ -83,9 +149,14 @@ export default class ImportService {
   }
 
   async importAlarms() {
-    const alarms = await this._parser.parseAlarms();
-    if (alarms.length > 0) {
-      await this._db.insertAlarms(this._idHolder.experiment, alarms, this._experiment.beginTime);      
+    try {
+      const alarms = await this._parser.parseAlarms();
+      if (alarms.length > 0) {
+        await this._db.insertAlarms(this._idHolder.experiment, alarms, this._experiment.beginTime);      
+      }
+    } catch (err) {
+      this._db.removeExperiment(this._idHolder.experiment);
+      throw err;
     }
   }
 }

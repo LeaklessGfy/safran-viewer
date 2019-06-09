@@ -1,8 +1,8 @@
 <template>
   <div id="app">
-    <navbar/>
-    <router-view class="pt-3"/>
-    <notifications position="top right"/>
+    <navbar />
+    <router-view class="pt-3" />
+    <notifications position="top right" />
   </div>
 </template>
 
@@ -10,6 +10,9 @@
 import Navbar from './components/shared/Navbar';
 
 export default {
+  components: {
+    navbar: Navbar
+  },
   data() {
     return {
       sub: null
@@ -23,14 +26,11 @@ export default {
         title: 'Erreur',
         text: err,
         duration: 5000
-      })
+      });
     });
   },
   beforeDestroy() {
     this.sub.unsubscribe();
-  },
-  components: {
-    navbar: Navbar
   }
 };
 </script>

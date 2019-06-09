@@ -2,11 +2,12 @@
   <b-container class="pb-5">
     <h1>Import</h1>
 
-    <b-form @submit="onSubmit" @reset="onReset">
-      <b-form-group>
-        <b-form-checkbox v-model="local">
-          Créer en Local ?
-        </b-form-checkbox>
+    <b-form
+      @submit="onSubmit"
+      @reset="onReset"
+    >
+      <b-form-group label="Créer en local ?">
+        <toggle-button v-model="local" />
       </b-form-group>
 
       <b-form-group label="Référence">
@@ -28,28 +29,27 @@
       </b-form-group>
 
       <div class="border p-3 mb-3">
-        <b-form-group v-if="benchs.length" label="Banc">
-          <b-form-select v-model="bench" :options="benchs">
+        <b-form-group
+          label="Banc"
+        >
+          <b-form-select
+            v-model="benchChoice"
+            :options="benchs"
+          >
             <template slot="first">
-              <option :value="newBench">New...</option>
+              <option :value="null">
+                Créer...
+              </option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="bench === newBench">
-          <b-form-group label="Référence du banc">
+        <div v-if="benchChoice === null">
+          <b-form-group label="Banc">
             <b-form-input
-              v-model="bench.reference"
-              :state="Boolean(bench.reference)"
-              placeholder="Référence du banc"
-              required
-            />
-          </b-form-group>
-          <b-form-group label="Nom du banc">
-            <b-form-input
-              v-model="bench.name"
-              :state="Boolean(bench.name)"
-              placeholder="Nom du banc"
+              v-model="bench"
+              :state="Boolean(bench)"
+              placeholder="Banc"
               required
             />
           </b-form-group>
@@ -57,20 +57,27 @@
       </div>
 
       <div class="border p-3 mb-3">
-        <b-form-group v-if="campaigns.length" label="Campagne">
-          <b-form-select v-model="campaign" :options="campaigns">
+        <b-form-group
+          label="Campagne"
+        >
+          <b-form-select
+            v-model="campaignChoice"
+            :options="campaigns"
+          >
             <template slot="first">
-              <option :value="newCampaign">New...</option>
+              <option :value="null">
+                Créer...
+              </option>
             </template>
           </b-form-select>
         </b-form-group>
 
-        <div v-if="campaign === newCampaign">
-          <b-form-group label="ID12C de la campagne">
+        <div v-if="campaignChoice === null">
+          <b-form-group label="Campagne">
             <b-form-input
-              v-model="campaign.id12c"
-              :state="Boolean(campaign.id12c)"
-              placeholder="ID12C de la campagne"
+              v-model="campaign"
+              :state="Boolean(campaign)"
+              placeholder="Campagne"
               required
             />
           </b-form-group>
@@ -79,10 +86,11 @@
 
       <b-form-group label="Fichier Essai *">
         <b-form-file
-          v-model="experimentFile"
-          :state="Boolean(experimentFile)"
+          v-model="samplesFile"
+          :state="Boolean(samplesFile)"
           placeholder="Choisir un fichier..."
           drop-placeholder="Déposer un fichier ici..."
+          required
         />
       </b-form-group>
 
@@ -94,49 +102,86 @@
         />
       </b-form-group>
 
-      <b-form-group v-if="progress > 0" label="Progression">
-        <b-progress :value="progress" variant="success" striped :animated="progress < 100" />
+      <b-form-group
+        v-if="progressSamples > 0 && progressSamples < 100"
+        label="Progression essai"
+      >
+        <b-progress
+          :value="progressSamples"
+          :animated="true"
+          striped
+          variant="success"
+        />
+      </b-form-group>
+
+      <b-form-group
+        v-if="progressAlarms > 0 && progressAlarms < 100"
+        label="Progression alarmes"
+      >
+        <b-progress
+          :value="progressAlarms"
+          :animated="true"
+          striped
+          variant="warning"
+        />
       </b-form-group>
 
       <div class="mt-2">
-        <b-button type="reset" variant="danger" class="mr-2">Réinitialiser</b-button>
-        <b-button type="submit" variant="primary">Importer</b-button>
+        <b-button
+          type="reset"
+          variant="danger"
+          class="mr-2"
+        >
+          Réinitialiser
+        </b-button>
+        <b-button
+          type="submit"
+          variant="primary"
+        >
+          Importer
+        </b-button>
       </div>
+
+      <b-form-group
+        v-if="report"
+      >
+        <pre>{{ report }}</pre>
+      </b-form-group>
     </b-form>
   </b-container>
 </template>
 
 <script>
-import { map } from 'rxjs/operators';
-import ImportService from '../../services/import';
-
-const defaultBench = { reference: 'test', name: 'test' };
-const defaultCampaign = { id12c: 'test' };
+import { ImportServiceFactory } from '@/services/import';
 
 const defaultState = {
-  local: true,
+  local: false,
   reference: 'test',
   name: 'test',
-  bench: defaultBench,
-  campaign: defaultCampaign,
-  newBench: defaultBench,
-  newCampaign: defaultCampaign,
-  experimentFile: null,
+  benchChoice: null,
+  campaignChoice: null,
+  bench: 'test',
+  campaign: 'test',
+  samplesFile: null,
   alarmsFile: null,
-  progress: 0
+  progressSamples: 0,
+  progressAlarms: 0,
+  report: null
 };
 
 export default {
   data: () => Object.assign({}, defaultState),
-  subscriptions() {
-    return {
-      benchs: this.$db.fetchBenchs().pipe(
-        map(benchs => benchs.map(b => ({ text: b.name, value: JSON.stringify(b) })))
-      ),
-      campaigns: this.$db.fetchCampaigns().pipe(
-        map(campaigns => campaigns.map(c => ({ text: c.id12c, value: JSON.stringify(c) })))
-      )
-    };
+  computed: {
+    benchs() {
+      return this.$store.state.benchs;
+    },
+    campaigns() {
+      return this.$store.state.campaigns;
+    }
+  },
+  mounted() {
+    this.$store.dispatch('fetchBenchs');
+    this.$store.dispatch('fetchCampaigns');
   },
   methods: {
     async onSubmit(e) {
@@ -144,31 +189,43 @@ export default {
       const experiment = {
         reference: this.reference,
         name: this.name,
-        bench: this.bench,
-        campaign: this.campaign,
+        bench: this.benchChoice ? this.benchChoice : this.bench,
+        campaign: this.campaignChoice ? this.campaignChoice : this.campaign,
         isLocal: false
       };
 
-      if (!this.local) {
-        return;
-      }
-
-      const service = new ImportService(this.$db);
-      const observable = await service.init(experiment, this.experimentFile, this.alarmsFile);
-      observable.subscribe(
-        progress => this.progress = progress,
-        err => this.$notify({
-          type: 'error',
-          title: 'Erreur',
-          text: err
-        }),
-        () => this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: 'Import réussi'
-        })
+      const service = ImportServiceFactory(this.local, this.$db);
+      const obs = await service.init(experiment, this.samplesFile, this.alarmsFile);
+      obs.subscribe(
+        this.onNext.bind(this),
+        this.onError.bind(this),
+        this.onComplete.bind(this)
       );
       service.import();
+    },
+    onNext(report) {
+      if (report.title === 'Alarms') {
+        this.progressAlarms = report.progress;
+      } else {
+        this.progressSamples = report.progress;
+      }
+      this.report = JSON.stringify(report, undefined, 2);
+    },
+    onError(report) {
+      this.report = JSON.stringify(report, undefined, 2);
+      this.$notify({
+        type: 'error',
+        title: 'Erreur',
+        text: report.errors
+      });
+    },
+    onComplete() {
+      this.progressSamples = 100;
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: 'Import réussi'
+      });
     },
     onReset(e) {
       e.preventDefault();
