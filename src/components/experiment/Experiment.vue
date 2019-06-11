@@ -51,8 +51,7 @@ export default {
         'bench',
         'campaign',
         { key: 'startDate', formatter: dateToString },
-        { key: 'endDate', formatter: dateToString },
-        'isLocal'
+        { key: 'endDate', formatter: dateToString }
       ]
     };
   },

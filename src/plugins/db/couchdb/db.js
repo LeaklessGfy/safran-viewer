@@ -18,22 +18,22 @@ export default class Database {
     this.install();
   }
 
+  fetchPlugins() {
+    return this._promise(
+      this._db.query('plugins/findAll', {
+        include_docs: true
+      })
+    );
+  }
+
   fetchModifications(experimentId) {
-    this._loadingSubject.next(true);
-    return this._db.query('modifications/findByExperiment', {
-      key: experimentId,
-      include_docs: true
-    })
-    .then(values => {
-      return values.rows.map(row => row.doc);
-    })
-    .catch(err => {
-      this._errorsSubject.next(err);
-      throw err;
-    })
-    .finally(() => {
-      this._loadingSubject.next(false);
-    });
+    return this._promise(
+      this._db.query('modifications/findByExperiment', {
+        key: experimentId,
+        include_docs: true
+      }),
+      values => values.rows.map(row => row.doc)
+    );
   }
 
   insertModification(modification, experiment) {
@@ -62,38 +62,22 @@ export default class Database {
   }
 
   removeModification(modification) {
-    this._loadingSubject.next(true);
-    return this._db.remove(modification)
-    .then(result => {
-      if (!result.ok) {
-        throw new Error('Error while removing');
+    return this._promise(
+      this._db.remove(modification),
+      values => {
+        if (!values.ok) {
+          throw new Error('Error while removing');
+        }
+        return values;
       }
-      return result;
-    })
-    .catch(err => {
-      this._errorsSubject.next(err);
-      throw err;
-    })
-    .finally(() => {
-      this._loadingSubject.next(false);
-    });
+    );
   }
 
   fetchProtocols() {
-    this._loadingSubject.next(true);
-    return this._db.query('protocols/findAll', {
-      include_docs: true
-    })
-    .then(values => {
-      return values.rows.map(row => row.doc);
-    })
-    .catch(err => {
-      this._errorsSubject.next(err);
-      throw err;
-    })
-    .finally(() => {
-      this._loadingSubject.next(false);
-    });
+    return this._promise(
+      this._db.query('protocols/findAll', { include_docs: true }),
+      values => values.rows.map(row => row.doc)
+    );
   }
 
   insertProtocols(protocols) {
@@ -104,16 +88,13 @@ export default class Database {
     this._db = new PouchDB(DATABASE_NAME, {
       auto_compaction: true
     });
-    return Promise.resolve();
   }
 
   install() {
     this.openDatabase();
-    this._loadingSubject.next(true);
 
-    return this._db.bulkGet({ docs: DESIGNS })
-    .then(results => {
-      for (let result of results.results) {
+    return this._promise(this._db.bulkGet({ docs: DESIGNS }), values => {
+      for (let result of values.results) {
         for (let doc of result.docs) {
           if (doc.ok && doc.ok.views && Object.keys(doc.ok.views).length > 0) {
             this._db.remove(doc.ok._id, doc.ok._rev);
@@ -121,19 +102,19 @@ export default class Database {
         }
         this._db.put(DESIGNS_MAPPER[result.id]);
       }
-    })
-    .catch (err => {
-      this._errorsSubject.next(err);
-      throw err;
-    })
-    .finally(() => {
-      this._loadingSubject.next(false);
     });
   }
 
   drop() {
+    return this._promise(this._db.destroy());
+  }
+
+  _promise(promise, mapper) {
     this._loadingSubject.next(true);
-    return this._db.destroy()
+    return promise
+    .then(values => {
+      return mapper ? mapper(values) : values;
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;
