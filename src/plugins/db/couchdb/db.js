@@ -22,9 +22,32 @@ export default class Database {
     return this._promise(
       this._db.query('plugins/findAll', {
         include_docs: true
-      })
+      }),
+      values => values.rows.map(row => row.doc)
     );
   }
+
+  insertPlugin(plugin) {
+    const doc = {
+      id: uuidv4(),
+      typeX: 'plugin',
+      x: 0,
+      y: 0,
+      w: 2,
+      h: 8,
+      i: x,
+      static: true,
+      experiment: plugin.experiment,
+      measures: plugin.measures,
+      component: plugin.component
+    };
+
+    return this._promise(this._db.post(doc), values => {
+      doc._id = values.id;
+      doc._rev = values.rev;
+      return doc;
+    });
+  } 
 
   fetchModifications(experimentId) {
     return this._promise(
@@ -37,7 +60,6 @@ export default class Database {
   }
 
   insertModification(modification, experiment) {
-    this._loadingSubject.next(true);
     const doc = {
       id: uuidv4(),
       typeX: 'modification',
@@ -50,14 +72,10 @@ export default class Database {
       isApply: false,
       isLoad: false
     };
-    return this._insertDoc(doc)
-    .then(result => {
-      doc._id = result.id;
-      doc._rev = result.rev;
+    return this._promise(this._db.post(doc), values => {
+      doc._id = values.id;
+      doc._rev = values.rev;
       return doc;
-    })
-    .finally(() => {
-      this._loadingSubject.next(false);
     });
   }
 
@@ -80,8 +98,8 @@ export default class Database {
     );
   }
 
-  insertProtocols(protocols) {
-    this._insertDoc(protocols);
+  insertProtocols() {
+    //this._db.post(protocols);
   }
 
   openDatabase() {
@@ -122,15 +140,6 @@ export default class Database {
     .finally(() => {
       this._loadingSubject.next(false);
     });
-  }
-
-  async _insertDoc(doc) {
-    try {
-      return await this._db.post(doc);
-    } catch (err) {
-      this._errorsSubject.next(err);
-      return err;
-    }
   }
 
   async _insertMultipleDocs(docs) {
