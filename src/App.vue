@@ -1,7 +1,10 @@
 <template>
-  <div id="app">
+  <div
+    id="app"
+    class="h-100"
+  >
     <navbar />
-    <router-view class="pt-3" />
+    <router-view />
     <notifications position="top right" />
   </div>
 </template>

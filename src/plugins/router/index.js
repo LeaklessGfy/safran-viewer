@@ -2,6 +2,7 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '@/components/home/Home';
 import Dashboard from '@/components/dashboard/Dashboard';
+import Plugins from '@/components/plugins/Plugins';
 import Experiment from '@/components/experiment/Experiment';
 import Protocol from '@/components/protocol/Protocol';
 import Import from '@/components/import/Import';
@@ -12,6 +13,7 @@ Vue.use(VueRouter);
 const routes = [
   { path: '/', name: 'home', component: Home },
   { path: '/dashboard', name: 'Dashboard', component: Dashboard },
+  { path: '/plugins', name: 'Plugins', component: Plugins },
   { path: '/experiment/:id', name: 'experiment', component: Experiment },
   { path: '/protocol', name: 'protocol', component: Protocol },
   { path: '/import', name: 'import', component: Import },

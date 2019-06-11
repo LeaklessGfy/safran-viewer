@@ -18,6 +18,9 @@
         <b-nav-item href="#/dashboard">
           Dashboard
         </b-nav-item>
+        <b-nav-item href="#/plugins">
+          Plugins
+        </b-nav-item>
         <b-nav-item href="#/protocol">
           Protocole
         </b-nav-item>

@@ -33,9 +33,8 @@ export default {
   methods: {
     async updateTimeline(date) {
       const timeline = [];
-      for (let measure of this.plugin.selectedMeasures) {
-        const data = await this.$db.fetchSample(measure.id, date);
-
+      for (let measure of this.plugin.measures) {
+        const data = await this.$db.fetchSample(measure, date);
         timeline.push({
           measure: measure.name,
           type: measure.type,

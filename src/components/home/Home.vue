@@ -10,9 +10,7 @@
         class="d-flex justify-content-between align-items-center"
       >
         <div>
-          {{ experiment.name }} <b-badge :variant="experiment.isLocal ? 'light' : 'dark'">
-            {{ experiment.isLocal ? "LOCAL" : "REMOTE" }}
-          </b-badge>
+          {{ experiment.name }}
         </div>
         <b-button
           variant="danger"
@@ -52,6 +50,7 @@
 
 <script>
 export default {
+  name: 'Home',
   data() {
     return {
       currentPage: 1,

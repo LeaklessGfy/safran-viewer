@@ -132,8 +132,7 @@ export const store = new Vuex.Store({
   strict: true,
   state: {
     experiments: [],
-    benchs: [],
-    campaigns: [],
+    experimentsSelector: {},
     measures: [],
     measuresSelector: {},
     currentDate: null,
@@ -167,19 +166,19 @@ export const store = new Vuex.Store({
     SET_EXPERIMENTS(state, experiments) {
       state.experiments = experiments;
     },
-    SET_BENCHS(state, benchs) {
-      state.benchs = benchs;
-    },
-    SET_CAMPAIGNS(state, campaigns) {
-      state.campaigns = campaigns;
+    ADD_EXPERIMENT_SELECTOR(state, experiment) {
+      state.experimentsSelector = {
+        ...state.experimentsSelector,
+        [experiment.id]: experiment
+      };
     },
     SET_MEASURES(state, measures) {
       state.measures = measures;
     },
-    SET_MEASURES_SELECTOR(state, { experimentId, page, measures }) {
+    ADD_MEASURE_SELECTOR(state, measure) {
       state.measuresSelector = {
         ...state.measuresSelector,
-        [experimentId + page]: measures
+        [measure.id]: measure
       };
     },
     SET_CURRENT_DATE(state, currentDate) {
@@ -199,37 +198,27 @@ export const store = new Vuex.Store({
         commit('SET_EXPERIMENTS', experiments);
       });
     },
-    fetchBenchs({ commit }) {
-      DB.fetchBenchs()
-      .then(benchs => {
-        commit('SET_BENCHS', benchs);
-      });
-    },
-    fetchCampaigns({ commit }) {
-      DB.fetchCampaigns()
-      .then(campaigns => {
-        commit('SET_CAMPAIGNS', campaigns);
-      });
-    },
-    fetchMeasures({ state, commit }, { experimentId, page }) {
-      if (state.measuresSelector[experimentId + page]) {
-        return commit('SET_MEASURES', state.measuresSelector[experimentId + page]);
+    async fetchExperimentSelector({ state, commit }, experimentId) {
+      if (state.experimentsSelector[experimentId]) {
+        return;
       }
+      const experiment = await DB.fetchExperiment(experimentId);
+      commit('ADD_EXPERIMENT_SELECTOR', experiment);
+    },
+    fetchMeasures({ commit }, { experimentId, page }) {
       DB.fetchMeasures(experimentId, page)
       .then(measures => {
         commit('SET_MEASURES', measures);
-        commit('SET_MEASURES_SELECTOR', { experimentId, page, measures });
       });
     },
-    fetchSamples({ state, commit }, measureId) {
-      if (state.samplesSelector[measureId]) {
-        return commit('SET_SAMPLES', state.samplesSelector[measureId]);
+    async fetchMeasuresSelector({ state, commit }, measuresId) {
+      for (const id of measuresId) {
+        if (state.measuresSelector[id]) {
+          continue;
+        }
+        const measure = await DB.fetchMeasure(id);
+        commit('ADD_MEASURE_SELECTOR', measure);
       }
-      DB.fetchSamples(measureId)
-      .then(samples => {
-        commit('SET_SAMPLES', samples);
-        commit('SET_SAMPLES_SELECTOR', { measureId, samples });
-      });
     },
     fetchProtocols({ commit }) {
       DB.fetchProtocols()
@@ -240,5 +229,23 @@ export const store = new Vuex.Store({
   },
   modules: {
     default: createChartModule('default')
+  },
+  getters: {
+    experimentSelector: state => id => {
+      if (!state.experimentsSelector[id]) {
+        return null;
+      }
+      return state.experimentsSelector[id];
+    },
+    measuresSelector: state => (ids = []) => {
+      return ids
+        .map(id => {
+          if (!state.measuresSelector[id]) {
+            return null;
+          }
+          return state.measuresSelector[id];
+        })
+        .filter(measure => measure !== null);
+    }
   }
 });

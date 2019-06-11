@@ -6,10 +6,6 @@
       @submit="onSubmit"
       @reset="onReset"
     >
-      <b-form-group label="Créer en local ?">
-        <toggle-button v-model="local" />
-      </b-form-group>
-
       <b-form-group label="Référence">
         <b-form-input
           v-model="reference"
@@ -152,10 +148,9 @@
 </template>
 
 <script>
-import { ImportServiceFactory } from '@/services/import';
+import ImportService from '@/services/import';
 
 const defaultState = {
-  local: false,
   reference: 'test',
   name: 'test',
   benchChoice: null,
@@ -170,6 +165,7 @@ const defaultState = {
 };
 
 export default {
+  name: 'Import',
   data: () => Object.assign({}, defaultState),
   computed: {
     benchs() {
@@ -194,7 +190,7 @@ export default {
         isLocal: false
       };
 
-      const service = ImportServiceFactory(this.local, this.$db);
+      const service = new ImportService();
       const obs = await service.init(experiment, this.samplesFile, this.alarmsFile);
       obs.subscribe(
         this.onNext.bind(this),

@@ -66,7 +66,8 @@ export default {
     },
     onCancelMeasures: {
       type: Function,
-      required: true
+      required: false,
+      default: null
     },
     onSubmitMeasures: {
       type: Function,
@@ -101,7 +102,7 @@ export default {
     },
     onCancel() {
       this.tmpMeasures = this.selectedMeasures.slice();
-      this.onCancelMeasures();
+      this.onCancelMeasures ? this.onCancelMeasures() : null;
     },
     onSave() {
       const newSelected = [];

@@ -49,25 +49,26 @@ export default class Database {
   }
 
   fetchExperiment(id) {
-    return this._query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
-    .then(values => {
-      if (values.length < 1) {
-        throw new Error('Experiment not found with id ' + id);
+    return this._query(
+      `SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`,
+      values => {
+        if (values.length < 1) {
+          throw new Error('Experiment not found with id ' + id);
+        }
+        return {
+          ...values[0],
+          startDate: stringToDate(values[0].startDate),
+          endDate: stringToDate(values[0].endDate)
+        };
       }
-      return {
-        ...values[0],
-        startDate: stringToDate(values[0].startDate),
-        endDate: stringToDate(values[0].endDate)
-      };
-    });
+    );
   }
 
   fetchExperiments(page = 1) {
     return this._promise(Promise.all([
       this._db.query(`SELECT * FROM experiments LIMIT ${this._limit} OFFSET ${(page - 1) * this._limit};`),
       this._db.query('SELECT count("name") FROM experiments;')
-    ]))
-    .then(values => {
+    ]), values => {
       const result = values[0].map(r => ({
         ...r,
         startDate: stringToDate(r.startDate),
@@ -81,23 +82,23 @@ export default class Database {
   }
 
   fetchBenchs() {
-    return this._query('SELECT DISTINCT(bench) FROM experiments;')
-    .then(result => result.map(r => r.distinct));
+    return this._query('SELECT DISTINCT(bench) FROM experiments;', values => values.map(v => v.distinct));
   }
 
   fetchCampaigns() {
-    return this._query('SELECT DISTINCT(campaign) FROM experiments;')
-    .then(result => result.map(r => r.distinct));
+    return this._query('SELECT DISTINCT(campaign) FROM experiments;', values => values.map(v => v.distinct));
   }
 
   fetchMeasure(id) {
-    return this._query(`SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`)
-    .then(result => {
-      if (result.length < 1) {
-        throw new Error('Experiment not found with id ' + id);
+    return this._query(
+      `SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`,
+      values => {
+        if (values.length < 1) {
+          throw new Error('Experiment not found with id ' + id);
+        }
+        return values[0];
       }
-      return result[0];
-    });
+    );
   }
 
   fetchMeasures(experimentId, page = 1) {
@@ -109,8 +110,7 @@ export default class Database {
         OFFSET ${(page - 1) * this._limit};`
       ),
       this._db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`)
-    ]))
-    .then(values => {
+    ]), values => {
       const result = values[0];
       result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
       result.current = page;
@@ -120,13 +120,15 @@ export default class Database {
   }
 
   fetchSamples(measureId) {
-    return this._query(`SELECT * FROM samples WHERE "measureID"=${Influx.escape.stringLit(measureId)};`)
-    .then(values => {
-      return values.map(value => {
-        value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
-        return value;
-      });
-    });
+    return this._query(
+      `SELECT * FROM samples WHERE "measureID"=${Influx.escape.stringLit(measureId)};`,
+      values => {
+        return values.map(value => {
+          value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
+          return value;
+        });
+      }
+    );
   }
 
   fetchSample(measureId, date) {
@@ -134,21 +136,24 @@ export default class Database {
       `SELECT first(value) FROM samples
       WHERE "measureID"=${Influx.escape.stringLit(measureId)}
       AND time >= '${dateToISO(subSeconds(date, 1))}' AND time <= '${dateToISO(date)}'
-      GROUP BY time(100ms) fill(previous);`)
-    .then(values => {
-      const value = values.find(value => value.first !== null);
-      return value ? value.first : null;
-    });
+      GROUP BY time(100ms) fill(previous);`,
+      values => {
+        const value = values.find(value => value.first !== null);
+        return value ? value.first : null;
+      }
+    );
   }
 
   fetchAlarms(experimentId) {
-    return this._query(`SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`)
-    .then(values => {
-      return values.map(value => {
-        value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
-        return value;
-      });
-    });
+    return this._query(
+      `SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`,
+      values => {
+        return values.map(value => {
+          value.time = new Date(value.time.toLocaleString('en-US', { timeZone: 'UTC' }));
+          return value;
+        });
+      }
+    );
   }
 
   insertExperiment(experiment) {
@@ -166,8 +171,7 @@ export default class Database {
       }
     }];
 
-    return this._promise(this._db.writePoints(points))
-    .then(() => points[0].tags.id);
+    return this._promise(this._db.writePoints(points), () => points[0].tags.id);
   }
 
   insertMeasures(experimentId, measures) {
@@ -181,8 +185,7 @@ export default class Database {
       }
     }));
 
-    return this._promise(this._db.writePoints(points))
-    .then(() => points.map(point => point.tags.id));
+    return this._promise(this._db.writePoints(points), () => points.map(point => point.tags.id));
   }
 
   insertSamples(experimentId, samples, date = new Date()) {
@@ -229,8 +232,7 @@ export default class Database {
       schema: Schema
     });
 
-    return this._promise(this._db.ping(5000))
-    .then(hosts => {
+    return this._promise(this._db.ping(5000), hosts => {
       const hasSucceed = hosts.every(host => host.online);
       if (!hasSucceed) {
         throw new Error('Host not online : ' + this._host + ':' + this._port);
@@ -239,8 +241,7 @@ export default class Database {
   }
 
   install() {
-    return this._promise(this._db.getDatabaseNames())
-    .then(names => {
+    return this._promise(this._db.getDatabaseNames(), names => {
       if (!names.includes(DATABASE_NAME)) {
         return this._db.createDatabase(DATABASE_NAME);
       }
@@ -251,13 +252,16 @@ export default class Database {
     return this._promise(this._db.dropDatabase(DATABASE_NAME));
   }
 
-  _query(query) {
-    return this._promise(this._db.query(query, { precision: Influx.Precision.Milliseconds }));
+  _query(query, mapper) {
+    return this._promise(this._db.query(query, { precision: Influx.Precision.Milliseconds }), mapper);
   }
 
-  _promise(promise) {
+  _promise(promise, mapper) {
     this._loadingSubject.next(true);
     return promise
+    .then(result => {
+      return mapper ? mapper(result) : result;
+    })
     .catch(err => {
       this._errorsSubject.next(err);
       throw err;

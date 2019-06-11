@@ -16,14 +16,6 @@
       <b-button
         size="sm"
         variant="outline-dark"
-        @click="() => toggleConfig()"
-      >
-        <v-icon name="cog" />
-      </b-button>
-
-      <b-button
-        size="sm"
-        variant="outline-dark"
         @click="() => togglePlugin(plugin.i)"
       >
         <v-icon :name="plugin.static ? 'lock' : 'unlock'" />
@@ -38,47 +30,12 @@
       </b-button>
     </b-button-group>
 
-    <div
-      v-show="config || !experiment"
-      class="mb-4 px-4 pb-3 mw-100 mh-100"
-      style="overflow-y:scroll;"
-    >
-      <b-form-group label="Essai">
-        <b-form-select
-          v-model="experiment"
-          :options="experiments"
-        />
-      </b-form-group>
-
-      <b-form-group
-        v-if="experiment"
-        label="Mesures"
-      >
-        <measures
-          :experiment="experiment.id"
-          :selected-measures="selectedMeasures"
-          :on-cancel-measures="onCancelMeasures"
-          :on-submit-measures="onSubmitMeasures"
-        />
-      </b-form-group>
-    </div>
-
-    <slot
-      v-if="!config"
-      :experiment="experiment"
-      :selected-measures="selectedMeasures"
-      :removed-measures="removedMeasures"
-    />
+    <slot />
   </div>
 </template>
 
 <script>
-import Measures from '@/components/shared/Measures';
-
 export default {
-  components: {
-    measures: Measures
-  },
   props: {
     plugin: {
       type: Object,
@@ -91,38 +48,6 @@ export default {
     removePlugin: {
       type: Function,
       required: true
-    }
-  },
-  data() {
-    return {
-      config: true,
-      experiment: null,
-      selectedMeasures: [],
-      removedMeasures: []
-    };
-  },
-  computed: {
-    experiments() {
-      return this.$store.state.experiments.map(experiment => ({
-        value: experiment,
-        text: experiment.reference + ' ' + experiment.name
-      }));
-    }
-  },
-  methods: {
-    toggleConfig() {
-      if (!this.experiment) {
-        return;
-      }
-      this.config = !this.config;
-    },
-    onCancelMeasures() {
-      this.config = false;
-    },
-    onSubmitMeasures(selectedMeasures, removedMeasures) {
-      this.selectedMeasures = selectedMeasures;
-      this.removedMeasures = removedMeasures;
-      this.config = false;
     }
   }
 };

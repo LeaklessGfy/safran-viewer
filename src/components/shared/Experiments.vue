@@ -9,9 +9,7 @@
         :active="index === active"
         @click="() => onClickExperiment(index)"
       >
-        {{ experiment.name }} <b-badge :variant="experiment.isLocal ? 'light' : 'dark'">
-          {{ experiment.isLocal ? "LOCAL" : "REMOTE" }}
-        </b-badge>
+        {{ experiment.name }}
       </b-list-group-item>
     </b-list-group>
 
@@ -29,6 +27,12 @@
 
 <script>
 export default {
+  props: {
+    onExperiment: {
+      type: Function,
+      required: true
+    }
+  },
   data() {
     return {
       currentPage: 1,
@@ -40,12 +44,17 @@ export default {
       return this.$store.state.experiments;
     }
   },
+  created() {
+    this.$store.dispatch('fetchExperiments');
+  },
   methods: {
     onClickExperiment(index) {
       if (this.active === index) {
         this.active = -1;
+        this.onExperiment(null);
       } else {
         this.active = index;
+        this.onExperiment(this.experiments[index]);
       }
     },
     onPageChange(page) {
