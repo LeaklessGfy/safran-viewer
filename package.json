@@ -11,7 +11,7 @@
   "dependencies": {
     "@amcharts/amcharts4": "^4.2.3",
     "bootstrap": "^4.3.1",
-    "bootstrap-vue": "^2.0.0-rc.14",
+    "bootstrap-vue": "^2.0.0-rc.22",
     "date-fns": "^1.30.1",
     "influx": "^5.0.7",
     "pouchdb": "^7.0.0",

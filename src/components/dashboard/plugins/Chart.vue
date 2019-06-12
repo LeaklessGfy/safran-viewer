@@ -1,7 +1,7 @@
 <template>
   <div
     ref="chart"
-    class="w-100 h-100"
+    class="chart w-100 h-100"
   />
 </template>
 

@@ -1,36 +1,41 @@
 <template>
-  <div class="w-100 h-100">
-    <b-button
-      size="sm"
-      variant="outline-dark"
-      class="position-fixed"
-      style="top:0;left:0;"
-    >
-      {{ plugin.component.toUpperCase() }}
-    </b-button>
-
-    <b-button-group
-      class="position-fixed"
-      style="top:0;right:0;"
-    >
+  <div class="plugin w-100 h-100">
+    <div class="header">
       <b-button
         size="sm"
         variant="outline-dark"
-        @click="() => togglePlugin(plugin.i)"
+        class="title"
       >
-        <v-icon :name="plugin.static ? 'lock' : 'unlock'" />
+        {{ plugin.component.toUpperCase() }}
       </b-button>
 
-      <b-button
-        size="sm"
-        variant="outline-dark"
-        @click="() => removePlugin(plugin.i)"
-      >
-        <v-icon name="minus" />
-      </b-button>
-    </b-button-group>
+      <b-button-group class="actions">
+        <b-button
+          size="sm"
+          squared
+          variant="outline-dark"
+          @click="() => togglePlugin(plugin.i)"
+        >
+          <v-icon :name="plugin.static ? 'lock' : 'unlock'" />
+        </b-button>
 
-    <slot />
+        <b-button
+          size="sm"
+          squared
+          variant="outline-dark"
+          @click="() => removePlugin(plugin.i)"
+        >
+          <v-icon name="minus" />
+        </b-button>
+      </b-button-group>
+    </div>
+
+    <div
+      class="w-100"
+      style="height: calc(100% - 30px);"
+    >
+      <slot />
+    </div>
   </div>
 </template>
 
@@ -52,3 +57,27 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.plugin {
+  border: 1px solid #343436;
+}
+
+.plugin:hover {
+  border-color: #969697;
+}
+
+.plugin .header .title {
+  border-top: none;
+  border-left: none;
+}
+
+.plugin .header .actions {
+  float: right;
+}
+
+.plugin .header .actions button {
+  border-top: none;
+  border-right: none;
+}
+</style>

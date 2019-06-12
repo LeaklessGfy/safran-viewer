@@ -111,21 +111,7 @@ body {
   color: white !important;
 }
 
-.vue-grid-item {
-  border: 1px solid #343436;
-  padding-top: 40px;
-}
-
-.vue-grid-item:hover {
-  border-color: #969697;
-}
-
 .vue-grid-item>.vue-resizable-handle {
   background-color: grey;
-}
-
-.chart {
-  width: 100%;
-  height: 100%;
 }
 </style>

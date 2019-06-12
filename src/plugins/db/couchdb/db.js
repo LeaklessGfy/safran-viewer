@@ -41,7 +41,6 @@ export default class Database {
       measures: plugin.measures,
       component: plugin.component
     };
-
     return this._promise(this._db.post(doc), values => {
       doc._id = values.id;
       doc._rev = values.rev;
