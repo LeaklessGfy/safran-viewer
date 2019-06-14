@@ -22,6 +22,8 @@
             :h="plugin.h"
             :i="plugin.i"
             :static="plugin.static"
+            @resized="updatePlugin"
+            @moved="updatePlugin"
           >
             <plugin
               :plugin="plugin"
@@ -57,49 +59,24 @@ export default {
   },
   data() {
     return {
-      plugins: [
-        {
-          x: 0,
-          y: 0,
-          w: 5,
-          h: 8,
-          i: 0,
-          static: true,
-          experiment: '757d001a-9460-4beb-a43c-a352733ff89e',
-          measures: [],
-          component: 'chart'
-        },
-        {
-          x: 5,
-          y: 0,
-          w: 5,
-          h: 8,
-          i: 1,
-          static: true,
-          experiment: '',
-          measures: [],
-          component: 'timeline'
-        }
-      ]
+      plugins: []
     };
   },
+  mounted() {
+    this.$db.fetchPlugins()
+    .then(plugins => {
+      this.plugins = plugins;
+    });
+  },
   methods: {
-    addPlugin() {
-      this.plugins.push({
-        x: 0,
-        y: 0,
-        w: 2,
-        h: 2,
-        i: this.plugins.length,
-        static: false,
-        component: 'chart'
-      });
-    },
     togglePlugin(index) {
       this.plugins[index].static = !this.plugins[index].static;
     },
     removePlugin(index) {
       this.plugins.splice(index, 1);
+    },
+    updatePlugin(index) {
+      this.$db.updatePlugin(this.plugins[index]);
     }
   }
 };

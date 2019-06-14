@@ -14,6 +14,14 @@
           size="sm"
           squared
           variant="outline-dark"
+          :href="'/#/plugins/' + plugin._id"
+        >
+          <v-icon name="cog" />
+        </b-button>
+        <b-button
+          size="sm"
+          squared
+          variant="outline-dark"
           @click="() => togglePlugin(plugin.i)"
         >
           <v-icon :name="plugin.static ? 'lock' : 'unlock'" />
@@ -76,7 +84,7 @@ export default {
   float: right;
 }
 
-.plugin .header .actions button {
+.plugin .header .actions button, .plugin .header .actions a {
   border-top: none;
   border-right: none;
 }

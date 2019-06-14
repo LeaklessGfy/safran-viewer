@@ -16,7 +16,7 @@ export const DESIGNS_MAPPER = {
       findAll: {
         map: function(doc) {
           if (doc.typeX === 'plugin') {
-            emit(doc.id, null);
+            emit(doc.key, null);
           }
         }.toString()
       }

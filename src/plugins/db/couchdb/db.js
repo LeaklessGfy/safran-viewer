@@ -23,19 +23,30 @@ export default class Database {
       this._db.query('plugins/findAll', {
         include_docs: true
       }),
-      values => values.rows.map(row => row.doc)
+      values => values.rows.map(row => row.doc).map((doc, index) => {
+        doc.i = index;
+        doc.static = true;
+        return doc;
+      })
+    );
+  }
+
+  fetchPlugin(id) {
+    return this._promise(
+      this._db.query('plugins/findAll', {
+        key: id,
+        include_docs: true
+      })
     );
   }
 
   insertPlugin(plugin) {
     const doc = {
-      id: uuidv4(),
       typeX: 'plugin',
       x: 0,
       y: 0,
       w: 2,
       h: 8,
-      i: x,
       static: true,
       experiment: plugin.experiment,
       measures: plugin.measures,
@@ -46,7 +57,11 @@ export default class Database {
       doc._rev = values.rev;
       return doc;
     });
-  } 
+  }
+
+  updatePlugin(plugin) {
+    return this._promise(this._db.put(plugin));
+  }
 
   fetchModifications(experimentId) {
     return this._promise(

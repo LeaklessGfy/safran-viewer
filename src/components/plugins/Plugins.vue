@@ -80,6 +80,8 @@
             variant="success"
             class="position-fixed"
             style="bottom:20px;right:20px;"
+            :disabled="!experiment"
+            @click="onSave"
           >
             Save
           </b-button>
@@ -127,6 +129,12 @@ export default {
       };
     }
   },
+  mounted() {
+    if (this.$route.params.id) {
+      this.$db.fetchPlugin(this.$route.params.id)
+      .then(p => console.log(p));
+    }
+  },
   methods: {
     onMode(mode) {
       this.mode = mode;
@@ -136,6 +144,13 @@ export default {
     },
     onMeasures(measures) {
       this.measures = measures;
+    },
+    onSave() {
+      if (!this.experiment) {
+        return;
+      }
+      this.$db.insertPlugin(this.plugin)
+      .then(plugin => console.log(plugin));
     }
   }
 };

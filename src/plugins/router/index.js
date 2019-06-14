@@ -11,9 +11,10 @@ import Config from '@/components/config/Config';
 Vue.use(VueRouter);
 
 const routes = [
-  { path: '/', name: 'home', component: Home },
+  { path: '/', name: 'Home', component: Home },
   { path: '/dashboard', name: 'Dashboard', component: Dashboard },
-  { path: '/plugins', name: 'Plugins', component: Plugins },
+  { path: '/plugins', name: 'PluginsCreate', component: Plugins },
+  { path: '/plugins/:id', name: 'PluginsEdition', component: Plugins },
   { path: '/experiment/:id', name: 'experiment', component: Experiment },
   { path: '/protocol', name: 'protocol', component: Protocol },
   { path: '/import', name: 'import', component: Import },
