@@ -5,8 +5,8 @@
   >
     <b-row class="h-100">
       <b-col
-        md="3"
-        class="sidebar"
+        md="2"
+        class="h-100 theme-alt"
       >
         <h2>Options</h2>
 
@@ -29,7 +29,7 @@
           <b-button
             squared
             :pressed="mode === 'chart'"
-            variant="warning"
+            variant="outline-warning"
             class="mr-2"
             @click="() => onMode('chart')"
           >
@@ -39,7 +39,7 @@
           <b-button
             squared
             :pressed="mode === 'timeline'"
-            variant="warning"
+            variant="outline-warning"
             class="mr-2"
             @click="() => onMode('timeline')"
           >
@@ -48,8 +48,8 @@
 
           <b-button
             squared
-            :pressed="mode === 'modifications'"
-            variant="warning"
+            :pressed="mode === 'modification'"
+            variant="outline-warning"
             class="mr-2"
             @click="() => onMode('modification')"
           >
@@ -157,12 +157,6 @@ export default {
 </script>
 
 <style scoped>
-.sidebar {
-  height: 100%;
-  background: white;
-  color: black;
-}
-
 h2 {
   font-size: 1.3em;
   margin-top: 10px;
