@@ -135,6 +135,7 @@ export const store = new Vuex.Store({
     experimentsSelector: {},
     measures: [],
     measuresSelector: {},
+    samplesSelector: {},
     currentDate: null,
     protocols: {
       iena: {
@@ -181,6 +182,12 @@ export const store = new Vuex.Store({
         [measure.id]: measure
       };
     },
+    ADD_SAMPLE_SELECTOR(state, { id, sample }) {
+      state.samplesSelector = {
+        ...state.samplesSelector,
+        [id]: sample
+      };
+    },
     SET_CURRENT_DATE(state, currentDate) {
       state.currentDate = currentDate;
     },
@@ -220,6 +227,15 @@ export const store = new Vuex.Store({
         commit('ADD_MEASURE_SELECTOR', measure);
       }
     },
+    async fetchSamplesSelector({ state, commit }, measuresId) {
+      for (const id of measuresId) {
+        if (state.samplesSelector[id]) {
+          continue;
+        }
+        const sample = await DB.fetchSamples(id);
+        commit('ADD_SAMPLE_SELECTOR', { id, sample });
+      }
+    },
     fetchProtocols({ commit }) {
       DB.fetchProtocols()
       .then(protocols => {
@@ -246,6 +262,16 @@ export const store = new Vuex.Store({
           return state.measuresSelector[id];
         })
         .filter(measure => measure !== null);
+    },
+    samplesSelector: state => (ids = []) => {
+      return ids
+        .map(id => {
+          if (!state.samplesSelector[id]) {
+            return null;
+          }
+          return state.samplesSelector[id];
+        })
+        .filter(sample => sample !== null);
     }
   }
 });

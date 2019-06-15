@@ -26,14 +26,24 @@ export default {
     },
     measures() {
       return this.$store.getters.measuresSelector(this.plugin.measures);
+    },
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.measures);
+    }
+  },
+  watch: {
+    samples(newSamples) {
+      console.log(newSamples);
     }
   },
   async mounted() {
     await this.$store.dispatch('fetchExperimentSelector', this.plugin.experiment);
-    await this.$store.dispatch('fetchMeasuresSelector', this.plugin.measures);
     if (this.experiment) {
       this.createService();
     }
+
+    this.$store.dispatch('fetchMeasuresSelector', this.plugin.measures);
+    this.$store.dispatch('fetchSamplesSelector', this.plugin.measures);
   },
   methods: {
     async createService() {
@@ -43,12 +53,6 @@ export default {
         this.experiment.startDate,
         this.experiment.endDate
       );
-      this.service.addOnReadyListener(async () => {
-        for (let measure of this.measures) {
-          const samples = await this.$db.fetchSamples(measure.id);
-          this.service.addMeasure(measure, samples);
-        }
-      });
       this.service.addOnDateListener(date => {
         this.$store.commit('SET_CURRENT_DATE', date);
       });

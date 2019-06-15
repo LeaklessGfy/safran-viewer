@@ -148,12 +148,14 @@
 </template>
 
 <script>
-import ImportService from '@/services/import';
+import importExperiment from '@/services/import';
 
 const defaultState = {
   reference: 'test',
   name: 'test',
+  benchs: [],
   benchChoice: null,
+  campaigns: [],
   campaignChoice: null,
   bench: 'test',
   campaign: 'test',
@@ -167,17 +169,7 @@ const defaultState = {
 export default {
   name: 'Import',
   data: () => Object.assign({}, defaultState),
-  computed: {
-    benchs() {
-      return this.$store.state.benchs;
-    },
-    campaigns() {
-      return this.$store.state.campaigns;
-    }
-  },
   mounted() {
-    this.$store.dispatch('fetchBenchs');
-    this.$store.dispatch('fetchCampaigns');
   },
   methods: {
     async onSubmit(e) {
@@ -190,14 +182,12 @@ export default {
         isLocal: false
       };
 
-      const service = new ImportService();
-      const obs = await service.init(experiment, this.samplesFile, this.alarmsFile);
-      obs.subscribe(
+      importExperiment(experiment, this.samplesFile, this.alarmsFile)
+      .subscribe(
         this.onNext.bind(this),
         this.onError.bind(this),
         this.onComplete.bind(this)
       );
-      service.import();
     },
     onNext(report) {
       if (report.title === 'Alarms') {
