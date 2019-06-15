@@ -1,5 +1,5 @@
 <template>
-  <b-container class="pb-5">
+  <b-container class="mt-2 p-3 theme-alt">
     <h1>Import</h1>
 
     <b-form
@@ -41,7 +41,7 @@
         </b-form-group>
 
         <div v-if="benchChoice === null">
-          <b-form-group label="Banc">
+          <b-form-group>
             <b-form-input
               v-model="bench"
               :state="Boolean(bench)"
@@ -69,7 +69,7 @@
         </b-form-group>
 
         <div v-if="campaignChoice === null">
-          <b-form-group label="Campagne">
+          <b-form-group>
             <b-form-input
               v-model="campaign"
               :state="Boolean(campaign)"
@@ -232,4 +232,3 @@ export default {
   }
 };
 </script>
-

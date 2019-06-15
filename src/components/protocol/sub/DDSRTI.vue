@@ -2,6 +2,7 @@
   <b-card
     title="DDSRTI"
     sub-title="Configuration"
+    body-class="theme-alt"
   >
     <b-form>
       <!-- IP -->

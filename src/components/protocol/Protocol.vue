@@ -1,5 +1,5 @@
 <template>
-  <b-container>
+  <b-container class="mt-2 p-3 theme-alt">
     <h1>Protocole</h1>
 
     <b-card-group deck>

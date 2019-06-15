@@ -2,6 +2,7 @@
   <b-card
     title="IENA"
     sub-title="Configuration"
+    body-class="theme-alt"
   >
     <b-form>
       <!-- IP -->

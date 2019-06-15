@@ -51,9 +51,9 @@
             :pressed="mode === 'modifications'"
             variant="warning"
             class="mr-2"
-            @click="() => onMode('modifications')"
+            @click="() => onMode('modification')"
           >
-            Modifications
+            Modification
           </b-button>
         </div>
 
@@ -94,9 +94,10 @@
 <script>
 import Experiments from '../shared/Experiments';
 import Measures from '../shared/Measures';
-import Plugin from '../dashboard/Plugin';
-import Chart from '../dashboard/plugins/Chart';
-import Timeline from '../dashboard/plugins/Timeline';
+import Plugin from '../shared/Plugin';
+import Chart from '../shared/plugins/Chart';
+import Timeline from '../shared/plugins/Timeline';
+import Modification from '../shared/plugins/Modification';
 
 export default {
   name: 'Plugins',
@@ -105,7 +106,8 @@ export default {
     measures: Measures,
     plugin: Plugin,
     chart: Chart,
-    timeline: Timeline
+    timeline: Timeline,
+    modification: Modification
   },
   data() {
     return {
@@ -121,8 +123,6 @@ export default {
         y: 0,
         w: 5,
         h: 8,
-        i: 0,
-        static: true,
         experiment: this.experiment.id,
         measures: this.measures.map(m => m.id),
         component: this.mode

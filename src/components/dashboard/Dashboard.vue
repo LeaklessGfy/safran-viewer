@@ -44,9 +44,9 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
-import Plugin from './Plugin';
-import Chart from './plugins/Chart';
-import Timeline from './plugins/Timeline';
+import Plugin from '../shared/Plugin';
+import Chart from '../shared/plugins/Chart';
+import Timeline from '../shared/plugins/Timeline';
 
 export default {
   name: 'Dashboard',
@@ -83,11 +83,6 @@ export default {
 </script>
 
 <style>
-body {
-  background-color: #161719 !important;
-  color: white !important;
-}
-
 .vue-grid-item>.vue-resizable-handle {
   background-color: grey;
 }

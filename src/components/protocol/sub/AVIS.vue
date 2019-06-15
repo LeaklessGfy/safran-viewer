@@ -2,6 +2,7 @@
   <b-card
     title="AVIS"
     sub-title="Configuration"
+    body-class="theme-alt"
   >
     <b-form>
       <!-- URL -->

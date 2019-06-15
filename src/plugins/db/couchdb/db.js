@@ -1,5 +1,4 @@
 import PouchDB from 'pouchdb';
-import uuidv4 from 'uuid/v4';
 import { DESIGNS, DESIGNS_MAPPER } from './schema';
 import { timeToTimestamp } from '@/services/date';
 
@@ -23,11 +22,11 @@ export default class Database {
       this._db.query('plugins/findAll', {
         include_docs: true
       }),
-      values => values.rows.map(row => row.doc).map((doc, index) => {
-        doc.i = index;
-        doc.static = true;
-        return doc;
-      })
+      values => values.rows.map((row, index) => ({
+        ...row.doc,
+        i: index,
+        static: true
+      }))
     );
   }
 
@@ -47,7 +46,6 @@ export default class Database {
       y: 0,
       w: 2,
       h: 8,
-      static: true,
       experiment: plugin.experiment,
       measures: plugin.measures,
       component: plugin.component
@@ -75,7 +73,6 @@ export default class Database {
 
   insertModification(modification, experiment) {
     const doc = {
-      id: uuidv4(),
       typeX: 'modification',
       experimentId: modification.experimentId,
       measure: modification.measure,
@@ -154,14 +151,5 @@ export default class Database {
     .finally(() => {
       this._loadingSubject.next(false);
     });
-  }
-
-  async _insertMultipleDocs(docs) {
-    try {
-      return await this._db.bulkDocs(docs);
-    } catch (err) {
-      this._errorsSubject.next(err);
-      return err;
-    }
   }
 }

@@ -53,6 +53,7 @@
 
 <script>
 export default {
+  name: 'Navbar',
   subscriptions() {
     return {
       loading: this.$db.getLoading()
