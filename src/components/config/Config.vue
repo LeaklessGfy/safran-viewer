@@ -7,8 +7,8 @@
       @submit="onSubmit"
     >
       <b-form-group label="Host de la base de données">
-        <b-input-group prepend="http://">
-          <b-form-input v-model="host" />
+        <b-input-group :prepend="config.protocol">
+          <b-form-input v-model="config.host" />
         </b-input-group>
       </b-form-group>
       <b-button
@@ -73,13 +73,23 @@
 export default {
   data() {
     return {
-      host: this.$db.getHost()
+      config: {
+        protocol: null,
+        host: null
+      }
     };
+  },
+  mounted() {
+    this.$db.fetchConfig()
+    .then(config => {
+      this.config = config;
+    });
   },
   methods: {
     onSubmit(e) {
       e.preventDefault();
-      this.$db.setHost(this.host)
+      this.$db.updateConfig(this.config)
+      .then(() => this.$db.initConfig())
       .then(() => {
         this.$notify({
           type: 'success',

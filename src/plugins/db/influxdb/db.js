@@ -1,51 +1,57 @@
 import * as Influx from 'influx';
 import uuidv4 from 'uuid/v4';
 import { subSeconds } from 'date-fns';
+import { BehaviorSubject, from, iif, of, concat } from 'rxjs';
+import { mergeMap  } from 'rxjs/operators';
 import Schema from './schema';
 import { dateToTimestamp, timeToTimestamp, stringToDate, dateToISO } from '@/services/date';
 
 const DATABASE_NAME = 'safran_db';
 
+let test = null;
+
 export default class Database {
   _db;
-  _host;
-  _port;
-  _limit;
+  _localDB;
+  _config;
 
   /* SUBJECTS */
   _errorsSubject;
   _loadingSubject;
 
-  constructor(errors, loading) {
-    this._host = 'localhost';
-    this._port = 8086;
-    this._limit = 5;
-
+  constructor(errors, loading, localDB) {
     this._errorsSubject = errors;
     this._loadingSubject = loading;
+    this._localDB = localDB;
+    this._config = {
+      host: 'localhost',
+      port: 8086,
+      protocol: 'http',
+      limit: 5
+    };
 
-    this.openDatabase();
-    this.install();
-  }
-
-  getHost() {
-    return this._host + ':' + this._port;
-  }
-
-  setHost(host) {
-    const split = host.split(':');
-    this._host = split[0];
-    this._port = split.length > 1 ? split[1] : this._port;
-    
-    return this.openDatabase();
-  }
-
-  getLimit() {
-    return this._limit;
-  }
-
-  setLimit(limit) {
-    this._limit = limit;
+    const bh = new BehaviorSubject();
+    const sub = bh.pipe(
+      mergeMap(request => 
+        iif(() => {
+          console.log('test', test);
+          return test === null;
+        },
+          from(new Promise(r => {
+            setTimeout(() => {
+              test = 1;
+              r(test);
+            }, 100);
+          })).pipe(mergeMap(val => from(request(val)))),
+          from(request(0))
+        )
+      )
+    );
+    bh.next(async (v) => 2 + v);
+    sub.subscribe(val => {
+      console.log(val);
+    });
+    sub.next(async (v) => v);
   }
 
   fetchExperiment(id) {
@@ -66,7 +72,7 @@ export default class Database {
 
   fetchExperiments(page = 1) {
     return this._promise(Promise.all([
-      this._db.query(`SELECT * FROM experiments LIMIT ${this._limit} OFFSET ${(page - 1) * this._limit};`),
+      this._db.query(`SELECT * FROM experiments LIMIT ${this._config.limit} OFFSET ${(page - 1) * this._config.limit};`),
       this._db.query('SELECT count("name") FROM experiments;')
     ]), values => {
       const result = values[0].map(r => ({
@@ -74,9 +80,9 @@ export default class Database {
         startDate: stringToDate(r.startDate),
         endDate: stringToDate(r.endDate)
       }));
-      result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.total = values[1].length > 0 ? values[1][0].count / this._config.limit : 1;
       result.current = page;
-      result.limit = this._limit;
+      result.limit = this._config.limit;
       return result;
     });
   }
@@ -106,15 +112,15 @@ export default class Database {
       this._db.query(
         `SELECT * FROM measures
         WHERE "experimentID"=${Influx.escape.stringLit(experimentId)}
-        LIMIT ${this._limit}
-        OFFSET ${(page - 1) * this._limit};`
+        LIMIT ${this._config.limit}
+        OFFSET ${(page - 1) * this._config.limit};`
       ),
       this._db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`)
     ]), values => {
       const result = values[0];
-      result.total = values[1].length > 0 ? values[1][0].count / this._limit : 1;
+      result.total = values[1].length > 0 ? values[1][0].count / this._config.limit : 1;
       result.current = page;
-      result.limit = this._limit;
+      result.limit = this._config.limit;
       return result;
     });
   }
@@ -224,10 +230,18 @@ export default class Database {
     ]));
   }
 
+  initConfig() {
+    return this._localDB.fetchConfig()
+    .then(config => this._config = config ? config : this._config)
+    .then(() => this.openDatabase())
+    .then(() => this.install());
+  }
+
   openDatabase() {
     this._db = new Influx.InfluxDB({
-      host: this._host,
-      port: this._port,
+      host: this._config.host,
+      port: this._config.port,
+      protocol: this._config.protocol,
       database: DATABASE_NAME,
       schema: Schema
     });
@@ -235,7 +249,7 @@ export default class Database {
     return this._promise(this._db.ping(5000), hosts => {
       const hasSucceed = hosts.every(host => host.online);
       if (!hasSucceed) {
-        throw new Error('Host not online : ' + this._host + ':' + this._port);
+        throw new Error('Host not online : ' + this._config.protocol + '://' + this._config.host + ':' + this._config.port);
       }
     });
   }

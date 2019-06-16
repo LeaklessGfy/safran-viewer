@@ -2,6 +2,25 @@ import { Subject, BehaviorSubject } from 'rxjs';
 import LocalDB from './couchdb/db';
 import RemoteDB from './influxdb/db';
 
+let INSTANCE = null;
+
+const createDatabases = async () => {
+  const local = new LocalDB();
+  await local.init();
+
+  const remote = new RemoteDB();
+  await remote.init();
+
+  return { local, remote };
+};
+
+export const getDatabases = async () => {
+  if (!INSTANCE) {
+    INSTANCE = await createDatabases();
+  }
+  return INSTANCE;
+};
+
 class DBHandler {
   _local;
   _remote;
@@ -14,7 +33,7 @@ class DBHandler {
     this._loadingSubject = new BehaviorSubject(false);
 
     this._local = new LocalDB(this._errorsSubject, this._loadingSubject);
-    this._remote = new RemoteDB(this._errorsSubject, this._loadingSubject);
+    this._remote = new RemoteDB(this._errorsSubject, this._loadingSubject, this._local);
   }
 
   getErrors() {

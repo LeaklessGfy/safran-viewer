@@ -17,6 +17,14 @@ export default class Database {
     this.install();
   }
 
+  fetchConfig() {
+    return this._promise(this._db.get('config'));
+  }
+
+  updateConfig(config) {
+    return this._promise(this._db.put(config));
+  }
+
   fetchPlugins() {
     return this._promise(
       this._db.query('plugins/findAll', {
@@ -41,7 +49,7 @@ export default class Database {
 
   insertPlugin(plugin) {
     const doc = {
-      typeX: 'plugin',
+      type: 'plugin',
       x: 0,
       y: 0,
       w: 2,
@@ -73,7 +81,7 @@ export default class Database {
 
   insertModification(modification, experiment) {
     const doc = {
-      typeX: 'modification',
+      type: 'modification',
       experimentId: modification.experimentId,
       measure: modification.measure,
       startDate: timeToTimestamp(modification.startTime, experiment.beginTime),
@@ -125,7 +133,7 @@ export default class Database {
     return this._promise(this._db.bulkGet({ docs: DESIGNS }), values => {
       for (let result of values.results) {
         for (let doc of result.docs) {
-          if (doc.ok && doc.ok.views && Object.keys(doc.ok.views).length > 0) {
+          if (doc.ok) {
             this._db.remove(doc.ok._id, doc.ok._rev);
           }
         }
