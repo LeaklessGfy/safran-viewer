@@ -26,6 +26,8 @@
 </template>
 
 <script>
+import { fetchExperiments } from '@/plugins/db/dbremote';
+
 export default {
   props: {
     onExperiment: {
@@ -35,17 +37,13 @@ export default {
   },
   data() {
     return {
+      experiments: [],
       currentPage: 1,
       active: -1
     };
   },
-  computed: {
-    experiments() {
-      return this.$store.state.experiments;
-    }
-  },
-  created() {
-    this.$store.dispatch('fetchExperiments');
+  async mounted() {
+    this.experiments = await fetchExperiments(this.currentPage);
   },
   methods: {
     onClickExperiment(index) {
@@ -57,9 +55,9 @@ export default {
         this.onExperiment(this.experiments[index]);
       }
     },
-    onPageChange(page) {
+    async onPageChange(page) {
       this.currentPage = page;
-      this.$store.dispatch('fetchExperiments', page);
+      this.experiments = await fetchExperiments(page);
     }
   }
 };

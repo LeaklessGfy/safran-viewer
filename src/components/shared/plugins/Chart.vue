@@ -29,6 +29,9 @@ export default {
     },
     samples() {
       return this.$store.getters.samplesSelector(this.plugin.measures);
+    },
+    alarms() {
+      return this.$store.getters.alarmsSelector(this.plugin.experiment);
     }
   },
   watch: {
@@ -37,13 +40,13 @@ export default {
     }
   },
   async mounted() {
-    await this.$store.dispatch('fetchExperimentSelector', this.plugin.experiment);
+    await this.$store.dispatch('fetchExperiment', this.plugin.experiment);
     if (this.experiment) {
       this.createService();
     }
-
-    this.$store.dispatch('fetchMeasuresSelector', this.plugin.measures);
-    this.$store.dispatch('fetchSamplesSelector', this.plugin.measures);
+    this.$store.dispatch('fetchMeasures', this.plugin.measures);
+    this.$store.dispatch('fetchSamples', this.plugin.measures);
+    this.$store.dispatch('fetchAlarms', this.plugin.experiment);
   },
   methods: {
     async createService() {

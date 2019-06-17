@@ -28,7 +28,7 @@ const fetchDB = (() => {
     if (cg === config) {
       return db;
     }
-    if (db !== null) {
+    if (db !== null && cg === null) {
       await Promise.all(promises);
       return db;
     }
@@ -54,7 +54,7 @@ const execute = async requestDB => {
   return await requestDB(db, config);
 };
 
-export const fetchExperiment = async (id) => {
+export const fetchExperiment = async id => {
   const results = await execute(db => db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
   if (results.length < 1) {
     throw new Error('Experiment not found with id ' + id);
@@ -63,13 +63,13 @@ export const fetchExperiment = async (id) => {
 };
 
 export const fetchExperiments = async (page = 1) => {
-  const [ experiments, { total, limit } ] = await Promise.all(
-    execute(async (db, cg) => db.query(`SELECT * FROM experiments LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`)),
+  const [ experiments, { total, limit }] = await Promise.all([
+    execute(async (db, cg) => await db.query(`SELECT * FROM experiments LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`)),
     execute(async (db, cg) => {
       const r = await db.query('SELECT count("name") FROM experiments;');
       return { total: r.length > 0 ? r[0].count % cg.limit : 1, limit: cg.limit };
     })
-  );
+  ]);
 
   const result = experiments.map(r => ({ ...r }));
   result.total = total;
@@ -98,7 +98,7 @@ export const fetchMeasure = async id => {
 };
 
 export const fetchMeasures = async (experimentId, page = 1) => {
-  const [ measures, { total, limit } ] = await Promise.all(
+  const [ measures, { total, limit } ] = await Promise.all([
     execute((db, cg) => db.query(
       `SELECT * FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)}
       LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`
@@ -108,7 +108,7 @@ export const fetchMeasures = async (experimentId, page = 1) => {
       const r = await db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`);
       return { total: r.length > 0 ? r[0].count % cg.limit : 1, limit: cg.limit };
     })
-  );
+  ]);
   
   const result = measures.map(r => ({ ...r }));
   result.total = total;
@@ -117,3 +117,24 @@ export const fetchMeasures = async (experimentId, page = 1) => {
 
   return result;
 };
+
+export const fetchSample = async () => {};
+
+export const fetchSamples = async measureId => {};
+
+export const fetchAlarms = async experimentId => {
+  const alarms = await execute(db => db.query(`SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`));
+
+  return alarms;
+};
+
+export const removeExperiment = async id => {
+  const query = `DELETE FROM experiments WHERE "id"=${Influx.escape.stringLit(id)};
+  DELETE FROM measures WHERE "experimentID"=${Influx.escape.stringLit(id)};
+  DELETE FROM samples WHERE "experimentID"=${Influx.escape.stringLit(id)};
+  DELETE FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(id)};`;
+
+  return await execute(db => db.query(query));
+};
+
+export const dropDB = async () => await execute(db => db.dropDatabase(DATABASE_NAME));

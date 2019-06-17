@@ -1,4 +1,4 @@
-# oreo-ng
+# Safran Viewer
 
 ## Project setup
 ```

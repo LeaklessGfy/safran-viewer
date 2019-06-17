@@ -7,8 +7,21 @@
       @submit="onSubmit"
     >
       <b-form-group label="Host de la base de données">
-        <b-input-group :prepend="config.protocol">
+        <b-input-group>
+          <b-input-group-prepend>
+            <b-form-select
+              v-model="config.protocol"
+              :options="['http', 'https']"
+            />
+          </b-input-group-prepend>
+
           <b-form-input v-model="config.host" />
+
+          <b-input-group-append>
+            <b-input-group prepend=":">
+              <b-form-input v-model="config.port" />
+            </b-input-group>
+          </b-input-group-append>
         </b-input-group>
       </b-form-group>
       <b-button
@@ -70,6 +83,9 @@
 </template>
 
 <script>
+import { fetchConfig, updateConfig, installDB as localInstall, dropDB as localDrop } from '@/plugins/db/dblocal';
+import { installDB as remoteInstall, dropDB as remoteDrop } from '@/plugins/db/dbremote';
+
 export default {
   data() {
     return {
@@ -79,45 +95,35 @@ export default {
       }
     };
   },
-  mounted() {
-    this.$db.fetchConfig()
-    .then(config => {
-      this.config = config;
-    });
+  async mounted() {
+    this.config = await fetchConfig();
   },
   methods: {
-    onSubmit(e) {
+    async onSubmit(e) {
       e.preventDefault();
-      this.$db.updateConfig(this.config)
-      .then(() => this.$db.initConfig())
-      .then(() => {
-        this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: `La connexion avec ${this.host} à bien été établis`
-        });
+      await updateConfig(this.config);
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: `La connexion avec ${this.config.host} à bien été établis`
       });
     },
-    install(type) {
-      const db = type === 'local' ? this.$db.getLocal() : this.$db.getRemote();
-      db.install()
-      .then(() => {
-        this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: `La base de données ${type} à bien été installée`
-        });
+    async install(type) {
+      const installDB = type === 'local' ? localInstall : remoteInstall;
+      await installDB();
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: `La base de données ${type} à bien été installée`
       });
     },
-    drop(type) {
-      const db = type === 'local' ? this.$db.getLocal() : this.$db.getRemote();
-      db.drop()
-      .then(() => {
-        this.$notify({
-          type: 'success',
-          title: 'Succès',
-          text: `La base de données ${type} à bien été supprimée`
-        });
+    async drop(type) {
+      const dropDB = type === 'local' ? localDrop : remoteDrop;
+      await dropDB();
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: `La base de données ${type} à bien été supprimée`
       });
     }
   }

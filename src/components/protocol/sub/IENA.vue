@@ -70,28 +70,6 @@
 
 <script>
 export default {
-  name: 'IENA',
-  computed: {
-    protocol: {
-      get() {
-        const store = this.$store;
-        return new Proxy(store.state.protocols.iena, {
-          get: function(target, name) {
-            return target[name];
-          },
-          set: function(target, name, value) {
-            store.commit('SET_PROTOCOL', {
-              key: 'iena',
-              protocol: {
-                ...store.state.protocols.iena,
-                [name]: value
-              }
-            });
-            return true;
-          }
-        });
-      }
-    }
-  }
+  name: 'IENA'
 };
 </script>

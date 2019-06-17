@@ -47,17 +47,38 @@
           /> Chargement...
         </b-button>
       </b-navbar-nav>
+      <notifications position="top right" />
     </b-collapse>
   </b-navbar>
 </template>
 
 <script>
+import { loading$, error$ } from '@/plugins/db/dbsubject';
+
 export default {
   name: 'Navbar',
-  subscriptions() {
+  data() {
     return {
-      loading: this.$db.getLoading()
+      subLoading: null,
+      subError: null,
+      loading: false,
+      error: null
     };
+  },
+  mounted() {
+    this.subLoading = loading$.subscribe(loading => this.loading = loading);
+    this.subError = error$.subscribe(error => {
+      this.$notify({
+        type: 'error',
+        title: 'Erreur',
+        text: error,
+        duration: 5000
+      });
+    });
+  },
+  destroyed() {
+    this.subLoading.unsubscribe();
+    this.subError.unsubscribe();
   }
 };
 </script>

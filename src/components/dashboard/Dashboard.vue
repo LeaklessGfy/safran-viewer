@@ -47,6 +47,7 @@ import VueGridLayout from 'vue-grid-layout';
 import Plugin from '../shared/Plugin';
 import Chart from '../shared/plugins/Chart';
 import Timeline from '../shared/plugins/Timeline';
+import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
 
 export default {
   name: 'Dashboard',
@@ -62,11 +63,8 @@ export default {
       plugins: []
     };
   },
-  mounted() {
-    this.$db.fetchPlugins()
-    .then(plugins => {
-      this.plugins = plugins;
-    });
+  async mounted() {
+    this.plugins = await fetchPlugins();
   },
   methods: {
     togglePlugin(index) {
@@ -75,8 +73,8 @@ export default {
     removePlugin(index) {
       this.plugins.splice(index, 1);
     },
-    updatePlugin(index) {
-      this.$db.updatePlugin(this.plugins[index]);
+    async updatePlugin(index) {
+      updatePlugin(this.plugins[index]);
     }
   }
 };

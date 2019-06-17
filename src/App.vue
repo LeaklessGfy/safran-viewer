@@ -5,7 +5,6 @@
   >
     <navbar />
     <router-view />
-    <notifications position="top right" />
   </div>
 </template>
 
@@ -16,25 +15,6 @@ export default {
   name: 'App',
   components: {
     navbar: Navbar
-  },
-  data() {
-    return {
-      sub: null
-    };
-  },
-  mounted() {
-    this.sub = this.$db.getErrors()
-    .subscribe(err => {
-      this.$notify({
-        type: 'error',
-        title: 'Erreur',
-        text: err,
-        duration: 5000
-      });
-    });
-  },
-  beforeDestroy() {
-    this.sub.unsubscribe();
   }
 };
 </script>

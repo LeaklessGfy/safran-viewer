@@ -99,6 +99,8 @@ import Chart from '../shared/plugins/Chart';
 import Timeline from '../shared/plugins/Timeline';
 import Modification from '../shared/plugins/Modification';
 
+import { fetchPlugin } from '@/plugins/db/dblocal';
+
 export default {
   name: 'Plugins',
   components: {
@@ -131,6 +133,7 @@ export default {
   },
   mounted() {
     if (this.$route.params.id) {
+      console.log(this.$route.params.id);
       this.$db.fetchPlugin(this.$route.params.id)
       .then(p => console.log(p));
     }

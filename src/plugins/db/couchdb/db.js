@@ -130,6 +130,7 @@ export default class Database {
   install() {
     this.openDatabase();
 
+    /*
     return this._promise(this._db.bulkGet({ docs: DESIGNS }), values => {
       for (let result of values.results) {
         for (let doc of result.docs) {
@@ -139,7 +140,7 @@ export default class Database {
         }
         this._db.put(DESIGNS_MAPPER[result.id]);
       }
-    });
+    });*/
   }
 
   drop() {

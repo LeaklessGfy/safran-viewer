@@ -35,8 +35,8 @@ export default {
     }  
   },
   async mounted() {
-    await this.$store.dispatch('fetchExperimentSelector', this.plugin.experiment);
-    await this.$store.dispatch('fetchMeasuresSelector', this.plugin.measures);
+    await this.$store.dispatch('fetchExperiment', this.plugin.experiment);
+    await this.$store.dispatch('fetchMeasures', this.plugin.measures);
 
     this.updateTimeline(Date.now());
   },

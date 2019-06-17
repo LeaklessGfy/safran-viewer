@@ -148,6 +148,7 @@
 </template>
 
 <script>
+import { fetchBenchs, fetchCampaigns } from '@/plugins/db/dbremote';
 import importExperiment from '@/services/import';
 
 const defaultState = {
@@ -169,7 +170,9 @@ const defaultState = {
 export default {
   name: 'Import',
   data: () => Object.assign({}, defaultState),
-  mounted() {
+  async mounted() {
+    this.benchs = await fetchBenchs();
+    this.campaigns = await fetchCampaigns();
   },
   methods: {
     async onSubmit(e) {

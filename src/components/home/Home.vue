@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { fetchExperiments } from '@/plugins/db/dbremote';
+import { fetchExperiments, removeExperiment } from '@/plugins/db/dbremote';
 
 export default {
   name: 'Home',
@@ -62,29 +62,25 @@ export default {
     };
   },
   async mounted() {
-    console.log('tt');
-    let t = await fetchExperiments(this.currentPage);
-    console.log(t);
+    this.experiments = await fetchExperiments(this.currentPage);
   },
   methods: {
-    onPageChange(page) {
-      this.$store.dispatch('fetchExperiments', page);
+    async onPageChange(page) {
+      this.experiments = await fetchExperiments(page);
       this.currentPage = page;
     },
     onClickDelete(e, del) {
       e.preventDefault();
-      if (del) {
-        this.del = del;
-        this.show = true;
-      }
+      if (!del) return; 
+      this.del = del;
+      this.show = true;
     },
     async onConfirmDelete() {
-      if (this.del) {
-        await this.$db.removeExperiment(this.del.id);
-      }
-      this.$store.dispatch('fetchExperiments', this.experiments.current);
-      this.show = false;
+      if (!this.del) return;
+      await removeExperiment(this.del.id);
+      this.experiments = await fetchExperiments(this.currentPage);
       this.del = null;
+      this.show = false;
     }
   }
 };

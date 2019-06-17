@@ -54,6 +54,8 @@
 </template>
 
 <script>
+import { fetchMeasures } from '@/plugins/db/dbremote';
+
 export default {
   props: {
     experiment: {
@@ -76,18 +78,14 @@ export default {
   },
   data() {
     return {
+      measures: [],
       tmpMeasures: [],
       currentPage: 1
     };
   },
-  computed: {
-    measures() {
-      return this.$store.state.measures;
-    }
-  },
-  created() {
+  async mounted() {
     this.tmpMeasures = this.selectedMeasures.slice();
-    this.$store.dispatch('fetchMeasures', { experimentId: this.experiment, page: this.currentPage });
+    this.measures = await fetchMeasures(this.experiment, this.currentPage);
   },
   methods: {
     addMeasure(measure) {
@@ -96,9 +94,9 @@ export default {
     removeMeasure(measure) {
       this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
     },
-    onPageChange(page) {
+    async onPageChange(page) {
       this.currentPage = page;
-      this.$store.dispatch('fetchMeasures', { experimentId: this.experiment, page });
+      this.measures = await fetchMeasures(this.experiment, page);
     },
     onCancel() {
       this.tmpMeasures = this.selectedMeasures.slice();
