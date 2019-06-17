@@ -66,6 +66,10 @@ export const updateConfig = async config => {
   return await execute(db => db.put(config));
 };
 
+export const updatePlugin = async plugin => {
+  return await execute(db => db.put(plugin));
+};
+
 export const installDB = async () => {
   fetchDB = setup();
   await execute(installDBRequest);

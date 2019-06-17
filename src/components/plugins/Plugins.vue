@@ -133,9 +133,7 @@ export default {
   },
   mounted() {
     if (this.$route.params.id) {
-      console.log(this.$route.params.id);
-      this.$db.fetchPlugin(this.$route.params.id)
-      .then(p => console.log(p));
+      fetchPlugin(this.$route.params.id);
     }
   },
   methods: {
@@ -152,8 +150,10 @@ export default {
       if (!this.experiment) {
         return;
       }
+      /*
       this.$db.insertPlugin(this.plugin)
       .then(plugin => console.log(plugin));
+      */
     }
   }
 };
