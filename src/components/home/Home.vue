@@ -49,22 +49,22 @@
 </template>
 
 <script>
+import { fetchExperiments } from '@/plugins/db/dbremote';
+
 export default {
   name: 'Home',
   data() {
     return {
+      experiments: [],
       currentPage: 1,
       show: false,
       del: null
     };
   },
-  computed: {
-    experiments() {
-      return this.$store.state.experiments;
-    }
-  },
-  mounted() {
-    this.$store.dispatch('fetchExperiments');
+  async mounted() {
+    console.log('tt');
+    let t = await fetchExperiments(this.currentPage);
+    console.log(t);
   },
   methods: {
     onPageChange(page) {

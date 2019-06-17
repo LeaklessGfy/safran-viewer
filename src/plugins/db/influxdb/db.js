@@ -1,19 +1,17 @@
 import * as Influx from 'influx';
 import uuidv4 from 'uuid/v4';
 import { subSeconds } from 'date-fns';
-import { BehaviorSubject, from, iif, of, concat } from 'rxjs';
-import { mergeMap  } from 'rxjs/operators';
 import Schema from './schema';
 import { dateToTimestamp, timeToTimestamp, stringToDate, dateToISO } from '@/services/date';
+import '../dbremote';
 
 const DATABASE_NAME = 'safran_db';
-
-let test = null;
 
 export default class Database {
   _db;
   _localDB;
   _config;
+  _awaits;
 
   /* SUBJECTS */
   _errorsSubject;
@@ -29,29 +27,6 @@ export default class Database {
       protocol: 'http',
       limit: 5
     };
-
-    const bh = new BehaviorSubject();
-    const sub = bh.pipe(
-      mergeMap(request => 
-        iif(() => {
-          console.log('test', test);
-          return test === null;
-        },
-          from(new Promise(r => {
-            setTimeout(() => {
-              test = 1;
-              r(test);
-            }, 100);
-          })).pipe(mergeMap(val => from(request(val)))),
-          from(request(0))
-        )
-      )
-    );
-    bh.next(async (v) => 2 + v);
-    sub.subscribe(val => {
-      console.log(val);
-    });
-    sub.next(async (v) => v);
   }
 
   fetchExperiment(id) {
