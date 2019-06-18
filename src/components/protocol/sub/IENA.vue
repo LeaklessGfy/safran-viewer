@@ -78,7 +78,7 @@ export default {
       moduleName: '',
       key: null,
       frequency: null
-    }
+    };
   }
 };
 </script>
