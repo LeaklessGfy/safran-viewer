@@ -9,7 +9,7 @@
       <b-form-group>
         <b-input-group prepend="IP">
           <b-form-input
-            v-model="protocol.ip"
+            v-model="ip"
             placeholder="127.0.0.1"
             type="text"
             required
@@ -21,7 +21,7 @@
       <b-form-group>
         <b-input-group prepend="Port">
           <b-form-input
-            v-model="protocol.port"
+            v-model="port"
             placeholder="1234"
             type="number"
             required
@@ -33,7 +33,7 @@
       <b-form-group>
         <b-input-group prepend="Module Name">
           <b-form-input
-            v-model="protocol.moduleName"
+            v-model="moduleName"
             placeholder="Module Name"
             type="text"
             required
@@ -45,7 +45,7 @@
       <b-form-group>
         <b-input-group prepend="Key">
           <b-form-input
-            v-model="protocol.key"
+            v-model="key"
             placeholder="1"
             type="number"
             required
@@ -57,7 +57,7 @@
       <b-form-group>
         <b-input-group prepend="Frequency">
           <b-form-input
-            v-model="protocol.frequency"
+            v-model="frequency"
             placeholder="500"
             type="number"
             required
@@ -70,6 +70,15 @@
 
 <script>
 export default {
-  name: 'IENA'
+  name: 'IENA',
+  data() {
+    return {
+      ip: '',
+      port: null,
+      moduleName: '',
+      key: null,
+      frequency: null
+    }
+  }
 };
 </script>

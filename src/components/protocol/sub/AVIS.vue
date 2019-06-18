@@ -10,7 +10,7 @@
         <b-input-group prepend="URL">
           <b-form-input
             v-model="url"
-            placeholder=""
+            placeholder="http://url.com"
             type="text"
             required
           />

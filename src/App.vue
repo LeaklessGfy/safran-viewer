@@ -41,6 +41,11 @@ body {
   color: rgb(197, 199, 194);
 }
 
+.theme-dark option {
+  color: rgb(210, 213, 216);
+  background: #2D3035;
+}
+
 .theme-dark .card {
   border-color: #6E7A78;
 }
