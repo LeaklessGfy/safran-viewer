@@ -16,12 +16,18 @@ const setup = () => {
     db = new PouchDB(DATABASE_NAME, { auto_compaction: true });
     promises = [installDBRequest(db)];
     await Promise.all(promises);
+    promises = [];
 
     return db;
   };
 };
 
 let fetchDB = setup();
+
+const execute = async requestDB => {
+  const db = await fetchDB();
+  return await requestDB(db);
+};
 
 const installDBRequest = async db => {
   const values = await db.bulkGet({ docs: DESIGNS });
@@ -33,12 +39,6 @@ const installDBRequest = async db => {
     }
     db.put(DESIGNS_MAPPER[result.id]);
   }
-};
-
-
-const execute = async requestDB => {
-  const db = await fetchDB();
-  return await requestDB(db);
 };
 
 let memoizeConfig = null;
@@ -72,7 +72,7 @@ export const updatePlugin = async plugin => {
 
 export const installDB = async () => {
   fetchDB = setup();
-  await execute(installDBRequest);
+  await execute(() => {});
 };
 
 export const dropDB = async () => await execute(db => db.destroy());

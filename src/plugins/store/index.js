@@ -80,7 +80,7 @@ export const store = new Vuex.Store({
       if (state.alarms[experimentId]) {
         return;
       }
-      const alarms = await fetchAlarms();
+      const alarms = await fetchAlarms(experimentId);
       commit('ADD_ALARMS', { id: experimentId, alarms });
     }
   },

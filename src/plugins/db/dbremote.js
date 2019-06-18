@@ -1,25 +1,11 @@
 import * as Influx from 'influx';
 import Schema from './influxdb/schema';
 import { fetchConfig } from './dblocal';
+import { loading$, error$ } from './dbsubject';
 
 const DATABASE_NAME = 'safran_db';
 
-const pingDB = async db => {
-  const hosts = await db.ping(500);
-  const hasSucceed = hosts.every(host => host.online);
-  if (!hasSucceed) {
-    throw new Error('Host not online');
-  }
-};
-
-const installDB = async db => {
-  const databaseNames = await db.getDatabaseNames();
-  if (!databaseNames.includes(DATABASE_NAME)) {
-    await db.createDatabase(DATABASE_NAME);
-  }
-};
-
-const fetchDB = (() => {
+const setup = () => {
   let db = null;
   let cg = null;
   let promises = [];
@@ -32,6 +18,7 @@ const fetchDB = (() => {
       await Promise.all(promises);
       return db;
     }
+
     db = new Influx.InfluxDB({
       host: config.host,
       port: config.port,
@@ -39,88 +26,112 @@ const fetchDB = (() => {
       database: DATABASE_NAME,
       schema: Schema
     });
-
-    promises = [pingDB(db), installDB(db)];
+    promises = [pingDBRequest(db), installDBRequest(db)];
     await Promise.all(promises);
     cg = config;
+    promises = [];
 
     return db;
   };
-})();
+};
+
+let fetchDB = setup();
 
 const execute = async requestDB => {
-  const config = await fetchConfig();
-  const db = await fetchDB(config);
-  return await requestDB(db, config);
+  loading$.next(true);
+  try {
+    const config = await fetchConfig();
+    const db = await fetchDB(config);
+    return await requestDB(db, config);
+  } catch (err) {
+    error$.next(err);
+  } finally {
+    loading$.next(false);
+  }
+};
+
+const pingDBRequest = async db => {
+  const hosts = await db.ping(500);
+  const hasSucceed = hosts.every(host => host.online);
+  if (!hasSucceed) {
+    throw new Error('Host not online');
+  }
+};
+
+const installDBRequest = async db => {
+  const databaseNames = await db.getDatabaseNames();
+  if (!databaseNames.includes(DATABASE_NAME)) {
+    await db.createDatabase(DATABASE_NAME);
+  }
 };
 
 export const fetchExperiment = async id => {
-  const results = await execute(db => db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
-  if (results.length < 1) {
+  const experiment = await execute(db => db.query(`SELECT * FROM experiments WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
+  if (experiment.length < 1) {
     throw new Error('Experiment not found with id ' + id);
   }
-  return results[0];
+  return experiment[0];
 };
 
 export const fetchExperiments = async (page = 1) => {
-  const [ experiments, { total, limit }] = await Promise.all([
-    execute(async (db, cg) => await db.query(`SELECT * FROM experiments LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`)),
-    execute(async (db, cg) => {
-      const r = await db.query('SELECT count("name") FROM experiments;');
-      return { total: r.length > 0 ? r[0].count % cg.limit : 1, limit: cg.limit };
-    })
-  ]);
+  return await execute(async (db, cg) => {
+    const [experiments, r] = await Promise.all([
+      db.query(`SELECT * FROM experiments LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`),
+      db.query('SELECT count("name") FROM experiments;')
+    ]);
 
-  const result = experiments.map(r => ({ ...r }));
-  result.total = total;
-  result.current = page;
-  result.limit = limit;
+    const result = experiments.map(r => ({ ...r }));
+    result.total = r.length > 0 ? r[0].count % cg.limit : 1;
+    result.current = page;
+    result.limit = cg.limit;
 
-  return result;
+    return result;
+  });
 };
 
 export const fetchBenchs = async () => {
-  const results = await execute(db => db.query('SELECT DISTINCT(bench) FROM experiments;'));
-  return results.map(r => r.distinct);
+  const benchs = await execute(db => db.query('SELECT DISTINCT(bench) FROM experiments;'));
+
+  return benchs.map(r => r.distinct);
 };
 
 export const fetchCampaigns = async () => {
-  const results = await execute(db => db.query('SELECT DISTINCT(campaign) FROM experiments;'));
-  return results.map(r => r.distinct);
+  const campaigns = await execute(db => db.query('SELECT DISTINCT(campaign) FROM experiments;'));
+
+  return campaigns.map(r => r.distinct);
 };
 
 export const fetchMeasure = async id => {
-  const results = await execute(db => db.query(`SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
-  if (!results.length < 1) {
+  const measure = await execute(db => db.query(`SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
+  if (!measure.length < 1) {
     throw new Error('Measure not found with id ' + id);
   }
-  return results[0];
+  return measure[0];
 };
 
 export const fetchMeasures = async (experimentId, page = 1) => {
-  const [ measures, { total, limit } ] = await Promise.all([
-    execute((db, cg) => db.query(
-      `SELECT * FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)}
+  return await execute(async (db, cg) => {
+    const [measures, r] = await Promise.all([
+      db.query(`SELECT * FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)}
       LIMIT ${cg.limit} OFFSET ${(page - 1) * cg.limit};`
-      )
-    ),
-    execute(async (db, cg) => {
-      const r = await db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`);
-      return { total: r.length > 0 ? r[0].count % cg.limit : 1, limit: cg.limit };
-    })
-  ]);
-  
-  const result = measures.map(r => ({ ...r }));
-  result.total = total;
-  result.current = page;
-  result.limit = limit;
+      ),
+      db.query(`SELECT count("name") FROM measures WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`)
+    ]);
 
-  return result;
+    const result = measures.map(r => ({ ...r }));
+    result.total =  r.length > 0 ? r[0].count % cg.limit : 1;
+    result.current = page;
+    result.limit = cg.limit;
+
+    return result;
+  });
 };
 
-export const fetchSample = async () => {};
-
-export const fetchSamples = async measureId => {};
+export const fetchSamples = async measureId => {
+  const samples = await execute(db => db.query(`SELECT * FROM samples WHERE "measureID"=${Influx.escape.stringLit(measureId)};`));
+  
+  return samples;
+};
 
 export const fetchAlarms = async experimentId => {
   const alarms = await execute(db => db.query(`SELECT * FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(experimentId)};`));
@@ -135,6 +146,12 @@ export const removeExperiment = async id => {
   DELETE FROM alarms WHERE "experimentID"=${Influx.escape.stringLit(id)};`;
 
   return await execute(db => db.query(query));
+};
+
+export const installDB = async () => {
+  fetchDB = setup();
+
+  await execute(() => {});
 };
 
 export const dropDB = async () => await execute(db => db.dropDatabase(DATABASE_NAME));
