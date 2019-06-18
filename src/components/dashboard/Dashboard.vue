@@ -74,7 +74,7 @@ export default {
       this.plugins.splice(index, 1);
     },
     async updatePlugin(index) {
-      updatePlugin(this.plugins[index]);
+      this.plugins[index] = await updatePlugin(this.plugins[index]);
     }
   }
 };

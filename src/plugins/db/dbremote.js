@@ -81,7 +81,7 @@ export const fetchExperiments = async (page = 1) => {
     ]);
 
     const result = experiments.map(r => ({ ...r }));
-    result.total = r.length > 0 ? r[0].count % cg.limit : 1;
+    result.total = r.length > 0 ? r[0].count / cg.limit : 1;
     result.current = page;
     result.limit = cg.limit;
 
@@ -103,7 +103,7 @@ export const fetchCampaigns = async () => {
 
 export const fetchMeasure = async id => {
   const measure = await execute(db => db.query(`SELECT * FROM measures WHERE "id"=${Influx.escape.stringLit(id)} LIMIT 1;`));
-  if (!measure.length < 1) {
+  if (measure.length < 1) {
     throw new Error('Measure not found with id ' + id);
   }
   return measure[0];
@@ -119,7 +119,7 @@ export const fetchMeasures = async (experimentId, page = 1) => {
     ]);
 
     const result = measures.map(r => ({ ...r }));
-    result.total =  r.length > 0 ? r[0].count % cg.limit : 1;
+    result.total =  r.length > 0 ? r[0].count / cg.limit : 1;
     result.current = page;
     result.limit = cg.limit;
 

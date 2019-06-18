@@ -27,6 +27,9 @@ export default {
     },
     measures() {
       return this.$store.getters.measuresSelector(this.plugin.measures);
+    },
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.samples);
     }
   },
   watch: {
@@ -37,6 +40,7 @@ export default {
   async mounted() {
     await this.$store.dispatch('fetchExperiment', this.plugin.experiment);
     await this.$store.dispatch('fetchMeasures', this.plugin.measures);
+    await this.$store.dispatch('fetchSamples', this.plugin.measures);
 
     this.updateTimeline(Date.now());
   },
@@ -44,7 +48,7 @@ export default {
     async updateTimeline(date) {
       const timeline = [];
       for (let measure of this.measures) {
-        const data = await this.$db.fetchSample(measure, date);
+        const data = '-'; // find good value in sample
         timeline.push({
           measure: measure.name,
           type: measure.type,

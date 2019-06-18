@@ -107,7 +107,7 @@ export const store = new Vuex.Store({
           if (!state.samples[id]) {
             return null;
           }
-          return state.samples[id];
+          return { measure: id, samples: state.samples[id] };
         })
         .filter(sample => sample !== null);
     },

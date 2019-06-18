@@ -12,11 +12,13 @@ export const DESIGNS = [
   { id: CONFIG_KEY }
 ];
 
+let emit = () => {};
+
 export const DESIGNS_MAPPER = {
   [TYPES_DESIGN_KEY]: {
     _id: TYPES_DESIGN_KEY,
     views: {
-      findByType: function(doc, emit) {
+      findByType: function(doc) {
         emit(doc.type);
       }.toString()
     }
@@ -25,9 +27,9 @@ export const DESIGNS_MAPPER = {
     _id: PLUGINS_DESIGN_KEY,
     views: {
       findAll: {
-        map: function(doc, emit) {
+        map: function(doc) {
           if (doc.type === 'plugin') {
-            emit(doc.key, null);
+            emit(doc._id, null);
           }
         }.toString()
       }
@@ -37,7 +39,7 @@ export const DESIGNS_MAPPER = {
     _id: MODIFICATIONS_DESIGN_KEY,
     views: {
       findByExperiment: {
-        map: function(doc, emit) {
+        map: function(doc) {
           if (doc.type === 'modification') {
             emit(doc.experimentId, null);
           }
@@ -49,7 +51,7 @@ export const DESIGNS_MAPPER = {
     _id: PROTOCOLS_DESIGN_KEY,
     views: {
       findAll: {
-        map: function(doc, emit) {
+        map: function(doc) {
           if (doc.type === 'protocol') {
             emit(doc.key, null);
           }

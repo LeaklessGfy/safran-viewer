@@ -36,7 +36,12 @@ export default {
   },
   watch: {
     samples(newSamples) {
-      console.log(newSamples);
+      if (this.service) {
+        for (const { measure, samples } of newSamples) {
+          const m = this.measures.find(m => m.id === measure);
+          this.service.addMeasure(m, samples);
+        }
+      }
     }
   },
   async mounted() {

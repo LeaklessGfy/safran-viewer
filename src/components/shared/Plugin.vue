@@ -1,5 +1,5 @@
 <template>
-  <div class="plugin w-100 h-100">
+  <div class="plugin w-100">
     <div class="header">
       <b-button
         size="sm"
@@ -40,7 +40,6 @@
 
     <div
       class="w-100"
-      style="height: calc(100% - 30px);"
     >
       <slot />
     </div>

@@ -11,12 +11,15 @@
         <h2>Options</h2>
 
         <p>Experiments</p>
-        <experiments :on-experiment="onExperiment" />
+        <experiments
+          :selected-experiment="experiment"
+          :on-experiment="onExperiment"
+        />
 
         <p>Measures</p>
         <measures
           v-if="experiment"
-          :experiment="experiment.id"
+          :experiment="experiment"
           :selected-measures="measures"
           :on-submit-measures="onMeasures"
         />
@@ -69,7 +72,7 @@
           >
             <component
               :is="plugin.component"
-              :key="experiment.id + measures.map(m => m.id)"
+              :key="experiment.id + measures.join('')"
               :plugin="plugin"
             />
           </plugin>
@@ -77,13 +80,13 @@
 
         <div>
           <b-button
-            variant="success"
+            :variant="isEdit ? 'warning' : 'success'"
             class="position-fixed"
             style="bottom:20px;right:20px;"
             :disabled="!experiment"
             @click="onSave"
           >
-            Save
+            {{ isEdit ? 'Modifier' : 'Enregistrer' }}
           </b-button>
         </div>
       </b-col>
@@ -99,7 +102,7 @@ import Chart from '../shared/plugins/Chart';
 import Timeline from '../shared/plugins/Timeline';
 import Modification from '../shared/plugins/Modification';
 
-import { fetchPlugin } from '@/plugins/db/dblocal';
+import { fetchPlugin, insertPlugin } from '@/plugins/db/dblocal';
 
 export default {
   name: 'Plugins',
@@ -115,7 +118,8 @@ export default {
     return {
       mode: 'chart',
       experiment: null,
-      measures: []
+      measures: [],
+      meta: null
     };
   },
   computed: {
@@ -125,16 +129,24 @@ export default {
         y: 0,
         w: 5,
         h: 8,
-        experiment: this.experiment.id,
-        measures: this.measures.map(m => m.id),
+        experiment: this.experiment,
+        measures: this.measures,
         component: this.mode
       };
+    },
+    isEdit() {
+      return this.$route.params.id ? true : false;
     }
   },
-  mounted() {
-    if (this.$route.params.id) {
-      fetchPlugin(this.$route.params.id);
+  async mounted() {
+    if (!this.isEdit) {
+      return;
     }
+    const plugin = await fetchPlugin(this.$route.params.id);
+    this.mode = plugin.component;
+    this.experiment = plugin.experiment;
+    this.measures = plugin.measures;
+    this.meta = { _id: plugin._id, _rev: plugin._rev };
   },
   methods: {
     onMode(mode) {
@@ -146,14 +158,20 @@ export default {
     onMeasures(measures) {
       this.measures = measures;
     },
-    onSave() {
+    async onSave() {
       if (!this.experiment) {
         return;
       }
-      /*
-      this.$db.insertPlugin(this.plugin)
-      .then(plugin => console.log(plugin));
-      */
+      if (!this.isEdit) {
+        await insertPlugin(this.plugin);
+      } else {
+        await updatePlugin({ ...this.plugin, ...this.meta });
+      }
+      this.$notify({
+        type: 'success',
+        title: 'Succès',
+        text: `Le plugin à bien été ${this.isEdit ? 'édité' : 'enregistré'}`
+      });
     }
   }
 };

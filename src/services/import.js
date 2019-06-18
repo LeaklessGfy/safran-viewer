@@ -9,11 +9,23 @@ const createData = (experiment, samplesFile, alarmsFile) => {
   return formData;
 };
 
+const createSource = (channel, subject) => {
+  const source = new EventSource('http://localhost:8888/events?channel=' + channel);
+  source.onmessage = event => {
+    const message = JSON.parse(event.data);
+    subject.next(message);
+    if (message.status === 'success') {
+      source.close();
+      return subject.complete();
+    } else if (message.status === 'failure') {
+      source.close();
+      return subject.error(message);
+    }
+  };
+};
+
 const postData = (subject, body) => {
-  fetch('http://localhost:8888/upload', {
-    method: 'POST',
-    body
-  })
+  fetch('http://localhost:8888/upload', { method: 'POST', body })
   .then(response => {
     if (!response.ok) {
       throw new Error(response.statusText);
@@ -25,19 +37,7 @@ const postData = (subject, body) => {
       subject.error(report);
       throw new Error(Object.values(report.errors).join(','));
     }
-
-    const source = new EventSource('http://localhost:8888/events?channel=' + report.channel);
-    source.onmessage = event => {
-      const message = JSON.parse(event.data);
-      subject.next(message);
-      if (message.status === 'success') {
-        source.close();
-        return subject.complete();
-      } else if (message.status === 'failure') {
-        source.close();
-        return subject.error(message);
-      }
-    };
+    createSource(report.chanel, subject);
   })
   .catch(err => {
     subject.error(err);

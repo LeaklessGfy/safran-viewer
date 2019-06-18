@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import { DESIGNS, DESIGNS_MAPPER } from './couchdb/schema';
+import { loading$, error$ } from './dbsubject';
 
 const DATABASE_NAME = 'safran_db';
 
@@ -25,8 +26,15 @@ const setup = () => {
 let fetchDB = setup();
 
 const execute = async requestDB => {
-  const db = await fetchDB();
+  loading$.next(true);
+  try {
+    const db = await fetchDB();
   return await requestDB(db);
+  } catch (err) {
+    error$.next(err);
+  } finally {
+    loading$.next(false);
+  }
 };
 
 const installDBRequest = async db => {
@@ -49,10 +57,10 @@ export const fetchConfig = async () => {
   return memoizeConfig;
 };
 
-export const fetchPlugin = async id => await execute(db => db.query('plugins/findAll', { key: id, include_docs: true}));
+export const fetchPlugin = async id => await execute(db => db.get(id));
 
 export const fetchPlugins = async () => {
-  const plugins = await execute(db => db.query('plugins/findAll', { include_docs: true}));
+  const plugins = await execute(db => db.query('plugins/findAll', { include_docs: true }));
 
   return plugins.rows.map((row, index) => ({
     ...row.doc,
@@ -61,13 +69,38 @@ export const fetchPlugins = async () => {
   }));
 };
 
+export const insertPlugin = async plugin => {
+  const doc = {
+    type: 'plugin',
+    x: 0,
+    y: 0,
+    w: 2,
+    h: 8,
+    experiment: plugin.experiment,
+    measures: plugin.measures,
+    component: plugin.component
+  };
+
+  return await execute(async db => {
+    const plugin = await db.post(doc);
+    doc._id = plugin.id;
+    doc._rev = plugin.rev;
+    return doc;
+  });
+};
+
 export const updateConfig = async config => {
   memoizeConfig = null;
   return await execute(db => db.put(config));
 };
 
 export const updatePlugin = async plugin => {
-  return await execute(db => db.put(plugin));
+  return await execute(async db => {
+    const doc = await db.put(plugin);
+    plugin._id = doc.id;
+    plugin._rev = doc.rev;
+    return plugin;
+  });
 };
 
 export const installDB = async () => {

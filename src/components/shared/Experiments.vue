@@ -30,6 +30,10 @@ import { fetchExperiments } from '@/plugins/db/dbremote';
 
 export default {
   props: {
+    selectedExperiment: {
+      type: String,
+      required: false
+    },
     onExperiment: {
       type: Function,
       required: true
@@ -44,6 +48,9 @@ export default {
   },
   async mounted() {
     this.experiments = await fetchExperiments(this.currentPage);
+    if (this.selectedExperiment) {
+      this.active = this.experiments.findIndex(e => e.id === this.selectedExperiment);
+    }
   },
   methods: {
     onClickExperiment(index) {
@@ -52,7 +59,7 @@ export default {
         this.onExperiment(null);
       } else {
         this.active = index;
-        this.onExperiment(this.experiments[index]);
+        this.onExperiment(this.experiments[index].id);
       }
     },
     async onPageChange(page) {

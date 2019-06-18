@@ -8,7 +8,7 @@
       >
         {{ measure.name + (measure.unit ? ' - ' + measure.unit : '') }}
         <b-button
-          v-if="!tmpMeasures.some(m => m.id === measure.id)"
+          v-if="!tmpMeasures.some(id => id === measure.id)"
           variant="outline-success"
           @click="() => addMeasure(measure)"
         >
@@ -89,10 +89,10 @@ export default {
   },
   methods: {
     addMeasure(measure) {
-      this.tmpMeasures.push(measure);
+      this.tmpMeasures.push(measure.id);
     },
     removeMeasure(measure) {
-      this.tmpMeasures = this.tmpMeasures.filter(m => m.id !== measure.id);
+      this.tmpMeasures = this.tmpMeasures.filter(id => id !== measure.id);
     },
     async onPageChange(page) {
       this.currentPage = page;
@@ -106,7 +106,7 @@ export default {
       const newSelected = [];
       const formerSelected = this.selectedMeasures.slice();
       for (let tmp of this.tmpMeasures) {
-        const index = formerSelected.findIndex(f => f.id === tmp.id);
+        const index = formerSelected.findIndex(f => f === tmp);
         if (index !== -1) { // If was already selected delete of former to only keep one to remove
           formerSelected.splice(index, 1);
         }
