@@ -45,8 +45,7 @@
 <script>
 import VueGridLayout from 'vue-grid-layout';
 import Plugin from '../shared/Plugin';
-import Chart from '../shared/plugins/Chart';
-import Timeline from '../shared/plugins/Timeline';
+import plugins from '../shared/plugins';
 import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
 
 export default {
@@ -55,8 +54,7 @@ export default {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
     plugin: Plugin,
-    chart: Chart,
-    timeline: Timeline
+    ...plugins
   },
   data() {
     return {

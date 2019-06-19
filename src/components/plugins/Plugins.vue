@@ -6,7 +6,8 @@
     <b-row class="h-100">
       <b-col
         md="2"
-        class="h-100 theme-alt"
+        class="theme-alt"
+        style="min-height:100%"
       >
         <h2>Options</h2>
 
@@ -39,33 +40,15 @@
 
         <div>
           <b-button
+            v-for="p in plugins"
+            :key="p"
             squared
-            :pressed="plugin.component === 'chart'"
             variant="outline-warning"
             class="mr-2"
-            @click="() => onComponent('chart')"
+            :pressed="p === plugin.component"
+            @click="() => onComponent(p)"
           >
-            Chart
-          </b-button>
-
-          <b-button
-            squared
-            :pressed="plugin.component === 'timeline'"
-            variant="outline-warning"
-            class="mr-2"
-            @click="() => onComponent('timeline')"
-          >
-            Timeline
-          </b-button>
-
-          <b-button
-            squared
-            :pressed="plugin.component === 'modification'"
-            variant="outline-warning"
-            class="mr-2"
-            @click="() => onComponent('modification')"
-          >
-            Modification
+            {{ p.charAt(0).toUpperCase() + p.slice(1) }}
           </b-button>
         </div>
 
@@ -107,9 +90,7 @@
 import Experiments from '../shared/Experiments';
 import Measures from '../shared/Measures';
 import Plugin from '../shared/Plugin';
-import Chart from '../shared/plugins/Chart';
-import Timeline from '../shared/plugins/Timeline';
-import Modification from '../shared/plugins/Modification';
+import plugins from '../shared/plugins';
 
 import { fetchPlugin, insertPlugin, updatePlugin } from '@/plugins/db/dblocal';
 
@@ -119,12 +100,11 @@ export default {
     experiments: Experiments,
     measures: Measures,
     plugin: Plugin,
-    chart: Chart,
-    timeline: Timeline,
-    modification: Modification
+    ...plugins
   },
   data() {
     return {
+      plugins: Object.keys(plugins),
       plugin: {
         name: null,
         experiment: null,

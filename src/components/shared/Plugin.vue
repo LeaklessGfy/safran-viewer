@@ -40,6 +40,7 @@
 
     <div
       class="w-100"
+      style="height: calc(100% - 7%)"
     >
       <slot />
     </div>
