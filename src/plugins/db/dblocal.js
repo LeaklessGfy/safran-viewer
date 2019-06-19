@@ -71,14 +71,12 @@ export const fetchPlugins = async () => {
 
 export const insertPlugin = async plugin => {
   const doc = {
+    ...plugin,
     type: 'plugin',
     x: 0,
     y: 0,
     w: 2,
     h: 8,
-    experiment: plugin.experiment,
-    measures: plugin.measures,
-    component: plugin.component
   };
 
   return await execute(async db => {

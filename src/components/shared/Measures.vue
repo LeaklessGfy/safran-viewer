@@ -60,7 +60,8 @@ export default {
   props: {
     experiment: {
       type: String,
-      required: true
+      required: false,
+      default: null
     },
     selectedMeasures: {
       type: Array,
@@ -84,6 +85,9 @@ export default {
     };
   },
   async mounted() {
+    if (!this.experiment) {
+      return;
+    }
     this.tmpMeasures = this.selectedMeasures.slice();
     this.measures = await fetchMeasures(this.experiment, this.currentPage);
   },

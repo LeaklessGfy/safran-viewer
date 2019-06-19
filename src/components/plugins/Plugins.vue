@@ -10,19 +10,28 @@
       >
         <h2>Options</h2>
 
-        <p>Experiments</p>
-        <experiments
-          :selected-experiment="experiment"
-          :on-experiment="onExperiment"
-        />
+        <b-form-group label="Nom">
+          <b-form-input
+            v-model="plugin.name"
+            required
+          />
+        </b-form-group>
 
-        <p>Measures</p>
-        <measures
-          v-if="experiment"
-          :experiment="experiment"
-          :selected-measures="measures"
-          :on-submit-measures="onMeasures"
-        />
+        <b-form-group label="Essai">
+          <experiments
+            :selected-experiment="plugin.experiment"
+            :on-experiment="onExperiment"
+          />
+        </b-form-group>
+
+        <b-form-group label="Mesures">
+          <measures
+            :key="plugin.experiment"
+            :experiment="plugin.experiment"
+            :selected-measures="plugin.measures"
+            :on-submit-measures="onMeasures"
+          />
+        </b-form-group>
       </b-col>
 
       <b-col class="h-100">
@@ -31,39 +40,39 @@
         <div>
           <b-button
             squared
-            :pressed="mode === 'chart'"
+            :pressed="plugin.component === 'chart'"
             variant="outline-warning"
             class="mr-2"
-            @click="() => onMode('chart')"
+            @click="() => onComponent('chart')"
           >
             Chart
           </b-button>
 
           <b-button
             squared
-            :pressed="mode === 'timeline'"
+            :pressed="plugin.component === 'timeline'"
             variant="outline-warning"
             class="mr-2"
-            @click="() => onMode('timeline')"
+            @click="() => onComponent('timeline')"
           >
             Timeline
           </b-button>
 
           <b-button
             squared
-            :pressed="mode === 'modification'"
+            :pressed="plugin.component === 'modification'"
             variant="outline-warning"
             class="mr-2"
-            @click="() => onMode('modification')"
+            @click="() => onComponent('modification')"
           >
             Modification
           </b-button>
         </div>
 
         <div
-          v-if="experiment"
+          v-if="plugin.experiment"
           class="mt-4"
-          :style="mode === 'chart' ? 'height:40%;' : ''"
+          :style="plugin.component === 'chart' ? 'height:40%;' : ''"
         >
           <plugin
             :plugin="plugin"
@@ -72,7 +81,7 @@
           >
             <component
               :is="plugin.component"
-              :key="experiment + measures.join('')"
+              :key="plugin.experiment + plugin.measures.join('')"
               :plugin="plugin"
             />
           </plugin>
@@ -83,7 +92,7 @@
             :variant="isEdit ? 'warning' : 'success'"
             class="position-fixed"
             style="bottom:20px;right:20px;"
-            :disabled="!experiment"
+            :disabled="!plugin.experiment"
             @click="onSave"
           >
             {{ isEdit ? 'Modifier' : 'Enregistrer' }}
@@ -116,24 +125,15 @@ export default {
   },
   data() {
     return {
-      mode: 'chart',
-      experiment: null,
-      measures: [],
-      meta: null
+      plugin: {
+        name: null,
+        experiment: null,
+        measures: [],
+        component: 'chart'
+      }
     };
   },
   computed: {
-    plugin() {
-      return {
-        x: 0,
-        y: 0,
-        w: 5,
-        h: 8,
-        experiment: this.experiment,
-        measures: this.measures,
-        component: this.mode
-      };
-    },
     isEdit() {
       return this.$route.params.id ? true : false;
     }
@@ -142,31 +142,23 @@ export default {
     if (!this.isEdit) {
       return;
     }
-    const plugin = await fetchPlugin(this.$route.params.id);
-    this.mode = plugin.component;
-    this.experiment = plugin.experiment;
-    this.measures = plugin.measures;
-    this.meta = { _id: plugin._id, _rev: plugin._rev };
+    this.plugin = await fetchPlugin(this.$route.params.id);
   },
   methods: {
-    onMode(mode) {
-      this.mode = mode;
-    },
     onExperiment(experiment) {
-      this.experiment = experiment;
+      this.plugin.experiment = experiment;
     },
     onMeasures(measures) {
-      this.measures = measures;
+      this.plugin.measures = measures;
+    },
+    onComponent(component) {
+      this.plugin.component = component;
     },
     async onSave() {
-      if (!this.experiment) {
+      if (!this.plugin.name || !this.plugin.experiment || !this.plugin.component) {
         return;
       }
-      if (!this.isEdit) {
-        await insertPlugin(this.plugin);
-      } else {
-        await updatePlugin({ ...this.plugin, ...this.meta });
-      }
+      this.isEdit ? await updatePlugin(this.plugin) : await insertPlugin(this.plugin);
       this.$notify({
         type: 'success',
         title: 'Succès',
