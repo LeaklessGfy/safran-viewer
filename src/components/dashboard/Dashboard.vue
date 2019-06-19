@@ -9,7 +9,7 @@
           :is-draggable="true"
           :is-resizable="true"
           :is-mirrored="false"
-          :vertical-compact="true"
+          :vertical-compact="false"
           :margin="[10, 10]"
           :use-css-transforms="true"
         >
@@ -68,13 +68,19 @@ export default {
   },
   methods: {
     togglePlugin(index) {
-      this.plugins[index].static = !this.plugins[index].static;
+      const plugin = this.plugins.find(plugin => plugin.i === index);
+      if (plugin) {
+        plugin.static = !plugin.static;
+      }
     },
     removePlugin(index) {
-      this.plugins.splice(index, 1);
+      this.plugins = this.plugins.filter(plugin => plugin.i !== index);
     },
     async updatePlugin(index) {
-      this.plugins[index] = await updatePlugin(this.plugins[index]);
+      const realIndex = this.plugins.findIndex(plugin => plugin.i === index);
+      if (realIndex > -1) {
+        this.plugins[realIndex] = await updatePlugin(this.plugins[realIndex]);
+      }
     }
   }
 };

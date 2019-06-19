@@ -1,5 +1,5 @@
 <template>
-  <div class="plugin w-100">
+  <div class="plugin w-100 h-100">
     <div class="header">
       <b-button
         size="sm"
