@@ -72,7 +72,7 @@
           >
             <component
               :is="plugin.component"
-              :key="experiment.id + measures.join('')"
+              :key="experiment + measures.join('')"
               :plugin="plugin"
             />
           </plugin>
@@ -102,7 +102,7 @@ import Chart from '../shared/plugins/Chart';
 import Timeline from '../shared/plugins/Timeline';
 import Modification from '../shared/plugins/Modification';
 
-import { fetchPlugin, insertPlugin } from '@/plugins/db/dblocal';
+import { fetchPlugin, insertPlugin, updatePlugin } from '@/plugins/db/dblocal';
 
 export default {
   name: 'Plugins',
