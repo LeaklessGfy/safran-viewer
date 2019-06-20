@@ -56,25 +56,20 @@
           </b-button>
         </div>
 
-        <div
-          v-if="experiment"
+        <plugin
+          :plugin="plugin"
           class="mt-4"
-          :style="plugin.component === 'chart' ? 'height:40%;' : ''"
+          style="max-height:50%;"
         >
-          <plugin
-            :plugin="plugin"
-            :toggle-plugin="() => {}"
-            :remove-plugin="() => {}"
-          >
-            <component
-              :is="plugin.component"
-              :key="experiment + samples + alarms"
-              :experiment="experiment"
-              :samples="samples"
-              :alarms="alarms"
-            />
-          </plugin>
-        </div>
+          <component
+            :is="plugin.component"
+            v-if="experiment"
+            :key="experiment.id"
+            :experiment="experiment"
+            :samples="samples"
+            :alarms="alarms"
+          />
+        </plugin>
 
         <div>
           <b-button
@@ -150,10 +145,6 @@ export default {
     },
     onRemoveMeasure(measure) {
       this.plugin.measures = this.plugin.measures.filter(m => m !== measure);
-    },
-    onMeasures(measures) {
-      this.plugin.measures = measures;
-      this.$store.dispatch('fetchSamples', measures);
     },
     onComponent(component) {
       this.plugin.component = component;

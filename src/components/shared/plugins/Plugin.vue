@@ -40,7 +40,7 @@
 
     <div
       class="w-100"
-      style="height: calc(100% - 7%)"
+      style="height:calc(100% - 31px)"
     >
       <slot />
     </div>
@@ -56,11 +56,13 @@ export default {
     },
     togglePlugin: {
       type: Function,
-      required: true
+      required: false,
+      default: () => {}
     },
     removePlugin: {
       type: Function,
-      required: true
+      required: false,
+      default: () => {}
     }
   }
 };
@@ -73,6 +75,11 @@ export default {
 
 .plugin:hover {
   border-color: #969697;
+}
+
+.plugin .header {
+  height: 30px;
+  overflow: hidden;
 }
 
 .plugin .header .title {

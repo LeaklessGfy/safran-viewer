@@ -1,5 +1,5 @@
 import * as Highcharts from 'highcharts';
-import { dateToString } from './date';
+import { dateToString } from '../date';
 import { COLORS, GREEN } from '@/plugins/ui/highchart';
 
 export const createChart = (ref, experiment) => {
@@ -7,6 +7,21 @@ export const createChart = (ref, experiment) => {
   const max = new Date(experiment.endDate).getTime();
   const observers = {
     onClick: []
+  };
+  const timeAxis = {
+    min: 0,
+    max: 1,
+    visible: false,
+    crosshair: {
+      snap: false
+    }
+  };
+  const timeSeries = {
+    type: 'column',
+    name: 'Time',
+    yAxis: 0,
+    color: GREEN,
+    data: [[min, 1]]
   };
 
   const chart = Highcharts.chart(ref, {
@@ -49,22 +64,12 @@ export const createChart = (ref, experiment) => {
       minPadding: 0,
       maxPadding: 0
     },
-    yAxis: [{
-      min: 0,
-      max: 1,
-      visible: false
-    }],
-    series: [{
-      type: 'column',
-      name: 'Time',
-      yAxis: 0,
-      color: GREEN,
-      data: [[min, 1]]
-    }]
+    yAxis: [timeAxis],
+    series: [timeSeries]
   });
 
   return {
-    reflow() {
+    scale() {
       chart.reflow();
     },
     addOnClickObserver(observer) {
@@ -90,7 +95,7 @@ export const createChart = (ref, experiment) => {
   };
 };
 
-const formatData = samples => samples.map(sample => [sample.time.getTime(), parseFloat(sample.value)]);
+const formatData = samples => samples.map(sample => [sample.time.getTime(), parseFloat(sample.value.replace(',', '.'))]);
 
 const addAxis = (index, measure) => ({
   id: measure.type + measure.unit,
@@ -113,7 +118,7 @@ const addSeries = (index, measure, samples) => ({
   name: measure.name,
   yAxis: index,
   tooltip: {
-    valueSuffix: measure.unit
+    valueSuffix: ' ' + measure.unit
   },
   color: COLORS[index - 1],
   data: formatData(samples)

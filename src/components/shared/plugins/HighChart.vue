@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import { createChart } from '@/services/highchart';
+import { createChart } from '@/services/plugins/highchart';
 
 export default {
   name: 'HighChart',
@@ -42,7 +42,7 @@ export default {
     }
     this.$nextTick(() => {
       if (this.service) {
-        this.service.reflow();
+        this.service.scale();
       }
     });
   }

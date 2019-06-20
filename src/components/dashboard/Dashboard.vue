@@ -80,16 +80,19 @@ export default {
   },
   async mounted() {
     this.plugins = await fetchPlugins();
+    const experiments = new Set();
+    const measures = new Set();
 
-    const experiments = this.plugins.map(plugin => plugin.experiment);
-    const uniqueExperiments = [...new Set(experiments)];
+    for (const plugin of this.plugins) {
+      experiments.add(plugin.experiment);
+      for (const measure of plugin.measures) {
+        measures.add(measure);
+      }
+    }
 
-    const measures = this.plugins.flatMap(plugin => plugin.measures);
-    const uniqueMeasures = [...new Set(measures)];
-
-    this.$store.dispatch('fetchExperiments', uniqueExperiments);
-    this.$store.dispatch('fetchSamples', uniqueMeasures);
-    this.$store.dispatch('fetchAlarms', uniqueExperiments);
+    this.$store.dispatch('fetchExperiments', [...experiments]);
+    this.$store.dispatch('fetchSamples', [...measures]);
+    this.$store.dispatch('fetchAlarms', [...experiments]);
   },
   methods: {
     togglePlugin(index) {
