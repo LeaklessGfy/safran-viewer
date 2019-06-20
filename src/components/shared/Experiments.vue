@@ -51,6 +51,8 @@ export default {
     this.experiments = await fetchExperiments(this.currentPage);
     if (this.selectedExperiment) {
       this.active = this.experiments.findIndex(e => e.id === this.selectedExperiment);
+    } else if (this.experiments.length > 0) {
+      this.onClickExperiment(0);
     }
   },
   methods: {

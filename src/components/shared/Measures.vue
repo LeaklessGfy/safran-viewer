@@ -12,14 +12,14 @@
           variant="outline-success"
           @click="() => addMeasure(measure)"
         >
-          Ajouter
+          <v-icon name="plus" />
         </b-button>
         <b-button
           v-else
           variant="outline-danger"
           @click="() => removeMeasure(measure)"
         >
-          Retirer
+          <v-icon name="minus" />
         </b-button>
       </b-list-group-item>
     </b-list-group>
@@ -33,23 +33,6 @@
       align="center"
       @change="onPageChange"
     />
-
-    <div class="text-center">
-      <b-button
-        variant="outline-danger"
-        class="mr-2"
-        @click="onCancel"
-      >
-        Annuler
-      </b-button>
-
-      <b-button
-        variant="outline-success"
-        @click="onSave"
-      >
-        Enregistrer
-      </b-button>
-    </div>
   </div>
 </template>
 
@@ -67,14 +50,15 @@ export default {
       type: Array,
       required: true
     },
-    onCancelMeasures: {
+    onAddMeasure: {
       type: Function,
       required: false,
-      default: null
+      default: () => {}
     },
-    onSubmitMeasures: {
+    onRemoveMeasure: {
       type: Function,
-      required: true
+      required: false,
+      default: () => {}
     }
   },
   data() {
@@ -94,29 +78,15 @@ export default {
   methods: {
     addMeasure(measure) {
       this.tmpMeasures.push(measure.id);
+      this.onAddMeasure(measure.id);
     },
     removeMeasure(measure) {
       this.tmpMeasures = this.tmpMeasures.filter(id => id !== measure.id);
+      this.onRemoveMeasure(measure.id);
     },
     async onPageChange(page) {
       this.currentPage = page;
       this.measures = await fetchMeasures(this.experiment, page);
-    },
-    onCancel() {
-      this.tmpMeasures = this.selectedMeasures.slice();
-      this.onCancelMeasures ? this.onCancelMeasures() : null;
-    },
-    onSave() {
-      const newSelected = [];
-      const formerSelected = this.selectedMeasures.slice();
-      for (let tmp of this.tmpMeasures) {
-        const index = formerSelected.findIndex(f => f === tmp);
-        if (index !== -1) { // If was already selected delete of former to only keep one to remove
-          formerSelected.splice(index, 1);
-        }
-        newSelected.push(tmp);
-      }
-      this.onSubmitMeasures(newSelected, formerSelected);
     }
   }
 };

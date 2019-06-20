@@ -30,12 +30,16 @@
             :key="plugin.experiment"
             :experiment="plugin.experiment"
             :selected-measures="plugin.measures"
-            :on-submit-measures="onMeasures"
+            :on-add-measure="onAddMeasure"
+            :on-remove-measure="onRemoveMeasure"
           />
         </b-form-group>
       </b-col>
 
-      <b-col class="h-100">
+      <b-col
+        md="10"
+        class="h-100"
+      >
         <h2>Plugins</h2>
 
         <div>
@@ -53,7 +57,7 @@
         </div>
 
         <div
-          v-if="plugin.experiment"
+          v-if="experiment"
           class="mt-4"
           :style="plugin.component === 'chart' ? 'height:40%;' : ''"
         >
@@ -64,8 +68,10 @@
           >
             <component
               :is="plugin.component"
-              :key="plugin.experiment + plugin.measures.join('')"
-              :plugin="plugin"
+              :key="experiment + samples + alarms"
+              :experiment="experiment"
+              :samples="samples"
+              :alarms="alarms"
             />
           </plugin>
         </div>
@@ -89,8 +95,7 @@
 <script>
 import Experiments from '../shared/Experiments';
 import Measures from '../shared/Measures';
-import Plugin from '../shared/Plugin';
-import plugins from '../shared/plugins';
+import plugins, { Plugin } from '../shared/plugins';
 
 import { fetchPlugin, insertPlugin, updatePlugin } from '@/plugins/db/dblocal';
 
@@ -109,11 +114,20 @@ export default {
         name: null,
         experiment: null,
         measures: [],
-        component: 'chart'
+        component: 'highchart'
       }
     };
   },
   computed: {
+    experiment() {
+      return this.$store.getters.experimentSelector(this.plugin.experiment);
+    },
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.measures);
+    },
+    alarms() {
+      return this.$store.getters.alarmsSelector(this.plugin.experiment);
+    },
     isEdit() {
       return this.$route.params.id ? true : false;
     }
@@ -127,15 +141,29 @@ export default {
   methods: {
     onExperiment(experiment) {
       this.plugin.experiment = experiment;
+      this.$store.dispatch('fetchExperiments', [experiment]);
+      this.$store.dispatch('fetchAlarms', [experiment]);
+    },
+    onAddMeasure(measure) {
+      this.plugin.measures.push(measure);
+      this.$store.dispatch('fetchSamples', [measure]);
+    },
+    onRemoveMeasure(measure) {
+      this.plugin.measures = this.plugin.measures.filter(m => m !== measure);
     },
     onMeasures(measures) {
       this.plugin.measures = measures;
+      this.$store.dispatch('fetchSamples', measures);
     },
     onComponent(component) {
       this.plugin.component = component;
     },
     async onSave() {
       if (!this.plugin.name || !this.plugin.experiment || !this.plugin.component) {
+        this.$notify({
+          type: 'warn',
+          text: 'Veuillez remplir un nom et un essai'
+        });
         return;
       }
       this.isEdit ? await updatePlugin(this.plugin) : await insertPlugin(this.plugin);

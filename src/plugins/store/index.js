@@ -51,36 +51,29 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
-    async fetchExperiment({ state, commit }, experimentId) {
-      if (state.experiments[experimentId]) {
-        return;
+    async fetchExperiments({ state, commit }, experimentsId) {
+      const promises = [];
+      for (const id of experimentsId) {
+        if (!state.experiments[id]) {
+          promises.push(fetchExperiment(id).then(experiment => commit('ADD_EXPERIMENT', experiment)));
+        }
       }
-      const experiment = await fetchExperiment(experimentId);
-      commit('ADD_EXPERIMENT', experiment);
+      await Promise.all(promises);
     },
     async fetchMeasures({ state, commit }, measuresId) {
-      for (const id of measuresId) {
-        if (state.measures[id]) {
-          continue;
-        }
-        const measure = await fetchMeasure(id);
-        commit('ADD_MEASURE', measure);
-      }
-    },
-    async fetchSamples({ state, commit }, measuresId) {
-      for (const id of measuresId) {
-        if (state.samples[id]) {
-          continue;
-        }
-        const samples = await fetchSamples(id);
-        commit('ADD_SAMPLES', { id, samples });
-      }
-    },
-    async fetchFullSamples({ state, commit }, measuresId) {
       const promises = [];
       for (const id of measuresId) {
         if (!state.measures[id]) {
-          promises.push(fetchMeasure(id).then(m => commit('ADD_MEASURE', m)));
+          promises.push(fetchMeasure(id).then(measure => commit('ADD_MEASURE', measure)));
+        }
+      }
+      await Promise.all(promises);
+    },
+    async fetchSamples({ state, commit }, measuresId) {
+      const promises = [];
+      for (const id of measuresId) {
+        if (!state.measures[id]) {
+          promises.push(fetchMeasure(id).then(measure => commit('ADD_MEASURE', measure)));
         }
         if (!state.samples[id]) {
           promises.push(fetchSamples(id).then(samples => commit('ADD_SAMPLES', { id, samples })));
@@ -88,12 +81,14 @@ export const store = new Vuex.Store({
       }
       await Promise.all(promises);
     },
-    async fetchAlarms({ state, commit }, experimentId) {
-      if (state.alarms[experimentId]) {
-        return;
+    async fetchAlarms({ state, commit }, experimentsId) {
+      const promises = [];
+      for (const id of experimentsId) {
+        if (!state.experiments[id]) {
+          promises.push(fetchAlarms(id).then(alarms => commit('ADD_ALARMS', { id, alarms })));
+        }
       }
-      const alarms = await fetchAlarms(experimentId);
-      commit('ADD_ALARMS', { id: experimentId, alarms });
+      await Promise.all(promises);
     }
   },
   getters: {
@@ -105,32 +100,17 @@ export const store = new Vuex.Store({
     },
     measuresSelector: state => (ids = []) => {
       return ids
-        .map(id => {
-          if (!state.measures[id]) {
-            return null;
-          }
-          return state.measures[id];
-        })
-        .filter(measure => measure !== null);
+        .filter(id => state.measures[id])
+        .map(id => state.measures[id]);
     },
     samplesSelector: state => (ids = []) => {
-      return ids
-        .map(id => {
-          if (!state.samples[id]) {
-            return null;
-          }
-          return { measure: id, samples: state.samples[id] };
-        })
-        .filter(sample => sample !== null);
-    },
-    fullSamplesSelector: state => (ids = []) => {
       return ids
         .filter(id => state.measures[id] && state.samples[id])
         .map(id => ({ measure: state.measures[id], samples: state.samples[id] }));
     },
     alarmsSelector: state => id => {
       if (!state.alarms[id]) {
-        return null;
+        return [];
       }
       return state.alarms[id];
     }

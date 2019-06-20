@@ -1,15 +1,33 @@
 import * as Highcharts from 'highcharts';
+import { dateToString } from './date';
+import { COLORS, GREEN } from '@/plugins/ui/highchart';
 
 export const createChart = (ref, experiment) => {
+  const min = new Date(experiment.startDate).getTime();
+  const max = new Date(experiment.endDate).getTime();
+  const observers = {
+    onClick: []
+  };
+
   const chart = Highcharts.chart(ref, {
     chart: {
-      zoomType: 'x'
+      zoomType: 'x',
+      events: {
+        click: function (e) {
+          const x = e.xAxis[0].value;
+          chart.series[0].points[0].update({ x }, true, { duration: 300 });
+          if (observers.onClick.length > 0) {
+            const date = new Date(x);
+            observers.onClick.forEach(o => o(date));
+          }
+        }
+      }
     },
     title: {
       text: experiment.name
     },
     subtitle: {
-      text: experiment.startDate + ' ' + experiment.endDate
+      text: dateToString(experiment.startDate) + ' - ' + dateToString(experiment.endDate)
     },
     credits: {
       enabled: false
@@ -17,96 +35,107 @@ export const createChart = (ref, experiment) => {
     legend: {
       enabled: true
     },
+    tooltip: {
+      shared: true,
+      xDateFormat: '%H:%M:%S.%L'
+    },
     xAxis: {
       type: 'datetime',
-      min: new Date(experiment.startDate).getTime(),
-      max: new Date(experiment.endDate).getTime(),
+      min,
+      max,
       crosshair: {
         snap: false
       },
       minPadding: 0,
       maxPadding: 0
     },
-    yAxis: [],
-    series: []
+    yAxis: [{
+      min: 0,
+      max: 1,
+      visible: false
+    }],
+    series: [{
+      type: 'column',
+      name: 'Time',
+      yAxis: 0,
+      color: GREEN,
+      data: [[min, 1]]
+    }]
   });
 
-  const colors = Highcharts.getOptions().colors;
-
   return {
-    addSeries(measure, samples) {
-      const index = chart.yAxis.length;
-      chart.addAxis({
-        labels: {
-          format: '{value} ' + measure.unit,
-          style: {
-            color: colors[index % colors.length]
-          }
-        },
-        title: {
-          text: measure.type,
-          style: {
-            color: colors[index % colors.length]
-          }
-        }
-      });
-      chart.addSeries({
-        type: 'areaspline',
-        name: measure.name,
-        yAxis: index,
-        data: samples // [[date, value]]
-      });
+    reflow() {
+      chart.reflow();
+    },
+    addOnClickObserver(observer) {
+      if (typeof observer !== 'function') {
+        throw new Error('OnClickObsever requires to be a function');
+      }
+      observers.onClick.push(observer);
+    },
+    addMeasure(measure, samples) {
+      const axis = chart.get(measure.type + measure.unit);
+      const index = axis ? axis.userOptions.index : chart.yAxis.length;
+      if (!axis) {
+        chart.addAxis(addAxis(index, measure));
+      }
+      chart.addSeries(addSeries(index, measure, samples));
+    },
+    addAlarm(alarm) {
+      chart.xAxis[0].addPlotLine(addPlotLine(alarm));
+    },
+    addModification(modification) {
+      chart.xAxis[0].addPlotBand(addPlotBand(modification));
     }
   };
 };
 
-/*
-const chart = Highcharts.chart("chart", {
-  chart: {
-    zoomType: "x"
+const formatData = samples => samples.map(sample => [sample.time.getTime(), parseFloat(sample.value)]);
+
+const addAxis = (index, measure) => ({
+  id: measure.type + measure.unit,
+  labels: {
+    format: '{value} ' + measure.unit,
+    style: {
+      color: COLORS[index - 1]
+    }
   },
   title: {
-    text: "Measures"
-  },
-  subtitle: {
-    text: ""
-  },
-  xAxis: {
-    type: "datetime",
-    min: new Date("2019-03-01").getTime(),
-    max: new Date("2019-03-02").getTime(),
-    crosshair: {
-      snap: false
+    text: measure.type,
+    style: {
+      color: COLORS[index - 1]
     }
-  },
-  yAxis: [
-    {
-      title: {
-        text: "Value"
-      }
-    },
-    {
-      labels: {
-        format: "{value}°C",
-        style: {
-          color: Highcharts.getOptions().colors[2]
-        }
-      },
-      title: {
-        text: "toto",
-        style: {
-          color: Highcharts.getOptions().colors[2]
-        }
-      }
-    }
-  ],
-  series: [
-    {
-      type: "areaspline",
-      name: "Measure 1",
-      yAxis: 1,
-      data: data
-    }
-  ]
+  }
 });
-*/
+
+const addSeries = (index, measure, samples) => ({
+  type: 'areaspline',
+  name: measure.name,
+  yAxis: index,
+  tooltip: {
+    valueSuffix: measure.unit
+  },
+  color: COLORS[index - 1],
+  data: formatData(samples)
+});
+
+const addPlotLine = alarm => ({
+  color: 'red', // get color from alarm level
+  dashStyle: 'ShortDash',
+  width: 2,
+  value: alarm.time.getTime(),
+  label: {
+    text: alarm.message,
+    rotation: 360,
+    x: -30
+  }
+});
+
+const addPlotBand = modification => ({
+  color: COLORS[2],
+  from: modification.startDate.getTime(),
+  to: modification.endDate.getTime(),
+  label: {
+    text: modification.title
+  }
+});

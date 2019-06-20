@@ -32,7 +32,11 @@
             >
               <component
                 :is="plugin.component"
-                :plugin="plugin"
+                v-if="experiments[plugin.experiment]"
+                :key="experiments[plugin.experiment].id + findSamples(plugin.measures).join('')"
+                :experiment="experiments[plugin.experiment]"
+                :samples="findSamples(plugin.measures)"
+                :alarms="alarms[plugin.alarms]"
               />
             </plugin>
           </grid-item>
@@ -44,8 +48,7 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
-import Plugin from '../shared/Plugin';
-import plugins from '../shared/plugins';
+import plugins, { Plugin } from '../shared/plugins';
 import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
 
 export default {
@@ -61,8 +64,32 @@ export default {
       plugins: []
     };
   },
+  computed: {
+    experiments() {
+      return this.$store.state.experiments;
+    },
+    samples() {
+      return this.$store.state.samples;
+    },
+    alarms() {
+      return this.$store.state.alarms;
+    },
+    findSamples() {
+      return ids => this.$store.getters.samplesSelector(ids);
+    }
+  },
   async mounted() {
     this.plugins = await fetchPlugins();
+
+    const experiments = this.plugins.map(plugin => plugin.experiment);
+    const uniqueExperiments = [...new Set(experiments)];
+
+    const measures = this.plugins.flatMap(plugin => plugin.measures);
+    const uniqueMeasures = [...new Set(measures)];
+
+    this.$store.dispatch('fetchExperiments', uniqueExperiments);
+    this.$store.dispatch('fetchSamples', uniqueMeasures);
+    this.$store.dispatch('fetchAlarms', uniqueExperiments);
   },
   methods: {
     togglePlugin(index) {
