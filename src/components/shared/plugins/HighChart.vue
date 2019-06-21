@@ -31,6 +31,18 @@ export default {
       service: null
     };
   },
+  computed: {
+    currentDate() {
+      return this.$store.state.currentDate;
+    }
+  },
+  watch: {
+    currentDate(currentDate) {
+      if (this.service) {
+        this.service.setTime(currentDate);
+      }
+    }
+  },
   async mounted() {
     this.service = createChart(this.$refs.chart, this.experiment);
     this.service.addOnClickObserver(date => this.$store.commit('SET_CURRENT_DATE', date));
@@ -40,11 +52,19 @@ export default {
     for (const alarm of this.alarms) {
       this.service.addAlarm(alarm);
     }
-    this.$nextTick(() => {
+    this.$nextTick(() => this.onUpdate());
+  },
+  destroyed() {
+    if (this.service) {
+      this.service.destroy();
+    }
+  },
+  methods: {
+    onUpdate() {
       if (this.service) {
         this.service.scale();
       }
-    });
+    }
   }
 };
 </script>

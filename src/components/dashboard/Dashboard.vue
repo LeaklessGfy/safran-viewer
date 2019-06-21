@@ -2,6 +2,22 @@
   <b-container fluid>
     <b-row>
       <b-col>
+        <h1>Dashboard</h1>
+
+        <cleave
+          v-model="currentTime"
+          class="form-control mt-2"
+          placeholder="hh:mm:ss:sss"
+          :options="options"
+          :raw="false"
+          @blur.native="onTimeChange"
+          @keyup.native="onTimeChange"
+        />
+      </b-col>
+    </b-row>
+
+    <b-row>
+      <b-col>
         <grid-layout
           :layout.sync="plugins"
           :col-num="12"
@@ -33,7 +49,8 @@
               <component
                 :is="plugin.component"
                 v-if="experiments[plugin.experiment]"
-                :key="experiments[plugin.experiment].id + findSamples(plugin.measures).join('')"
+                ref="plugins"
+                :key="experiments[plugin.experiment].id + findSamples(plugin.measures).length"
                 :experiment="experiments[plugin.experiment]"
                 :samples="findSamples(plugin.measures)"
                 :alarms="alarms[plugin.alarms]"
@@ -50,6 +67,7 @@
 import VueGridLayout from 'vue-grid-layout';
 import plugins, { Plugin } from '../shared/plugins';
 import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
+import { dateToTime, timeToDate } from '@/services/date';
 
 export default {
   name: 'Dashboard',
@@ -61,7 +79,8 @@ export default {
   },
   data() {
     return {
-      plugins: []
+      plugins: [],
+      currentTime: null
     };
   },
   computed: {
@@ -76,6 +95,17 @@ export default {
     },
     findSamples() {
       return ids => this.$store.getters.samplesSelector(ids);
+    },
+    currentDate() {
+      return this.$store.state.currentDate;
+    },
+    options() {
+      return this.$store.state.options;
+    }
+  },
+  watch: {
+    currentDate(currentDate) {
+      this.currentTime = dateToTime(currentDate);
     }
   },
   async mounted() {
@@ -90,6 +120,7 @@ export default {
       }
     }
 
+    this.currentTime = dateToTime(this.currentDate);
     this.$store.dispatch('fetchExperiments', [...experiments]);
     this.$store.dispatch('fetchSamples', [...measures]);
     this.$store.dispatch('fetchAlarms', [...experiments]);
@@ -109,6 +140,14 @@ export default {
       if (realIndex > -1) {
         this.plugins[realIndex] = await updatePlugin(this.plugins[realIndex]);
       }
+      this.$refs.plugins[index].onUpdate();
+    },
+    onTimeChange(e) {
+      if (e.keyCode !== undefined && e.keyCode !== 13) {
+        return;
+      }
+      const date = timeToDate(this.currentTime, this.currentDate);
+      this.$store.commit('SET_CURRENT_DATE', date);
     }
   }
 };

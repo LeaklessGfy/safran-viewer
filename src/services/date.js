@@ -8,7 +8,7 @@ export const dateToTimestamp = date => getTime(date);
 
 export const stringToDate = str => parse(str);
 
-export const dateToTime = date => format(date, 'HH:mm:ss.SSS');
+export const dateToTime = date => format(toUTC(date), 'HH:mm:ss.SSS');
 
 export const timeToTimestamp = (time, date) => {
   const build = timeToDate(time, date);
@@ -48,3 +48,21 @@ export const timeToDate = (time, date) => {
 
   return build;
 };
+
+export const validateDate = (date, startDate, endDate) => {
+  if (date < startDate) {
+    return startDate;
+  } else if (date > endDate) {
+    return endDate;
+  }
+  return date;
+};
+
+export const toUTC = date => new Date(
+  date.getUTCFullYear(),
+  date.getUTCMonth(),
+  date.getUTCDate(),
+  date.getUTCHours(),
+  date.getUTCMinutes(),
+  date.getUTCSeconds(),
+);

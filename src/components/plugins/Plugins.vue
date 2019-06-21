@@ -64,7 +64,7 @@
           <component
             :is="plugin.component"
             v-if="experiment"
-            :key="experiment.id"
+            :key="experiment.id + samples.length"
             :experiment="experiment"
             :samples="samples"
             :alarms="alarms"

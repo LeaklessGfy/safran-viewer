@@ -30,11 +30,9 @@ export const createChart = (ref, experiment) => {
       events: {
         click: function (e) {
           const x = e.xAxis[0].value;
+          const date = new Date(x);
           chart.series[0].points[0].update({ x }, true, { duration: 300 });
-          if (observers.onClick.length > 0) {
-            const date = new Date(x);
-            observers.onClick.forEach(o => o(date));
-          }
+          observers.onClick.forEach(o => o(date));
         }
       }
     },
@@ -91,6 +89,12 @@ export const createChart = (ref, experiment) => {
     },
     addModification(modification) {
       chart.xAxis[0].addPlotBand(addPlotBand(modification));
+    },
+    setTime(time) {
+      chart.series[0].points[0].update({ x: time }, true, { duration: 300 });
+    },
+    destroy() {
+      chart.destroy();
     }
   };
 };
