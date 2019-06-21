@@ -25,17 +25,14 @@
 </template>
 
 <script>
-import { timeToTimestamp } from '@/services/date';
+import { addMilliseconds } from 'date-fns';
 
 export default {
   props: {
-    mod: {
-      type: String,
-      required: true
-    },
-    service: {
-      type: Object,
-      required: true
+    speed: {
+      type: Number,
+      required: false,
+      default: () => 100
     }
   },
   data() {
@@ -45,37 +42,25 @@ export default {
     };
   },
   computed: {
-    experiment() {
-      return this.$store.state[this.mod].experiment;
-    },
-    currentTime() {
-      return this.$store.state[this.mod].currentTime;
+    currentDate() {
+      return this.$store.state.currentDate;
     }
   },
   methods: {
     startTimeline() {
       this.state = 1;
-      const speed = 100;
-      const currentDate = timeToTimestamp(this.currentTime, this.experiment.beginTime);
-      this.service.startTimeline(currentDate);
-
       this.interval = setInterval(() => {
-        const newDate = this.service.tickTimeline(speed);
-        if (newDate.getTime() >= this.experiment.endTime) {
-          clearInterval(this.interval);
-          this.service.stopTimeline();
-        }
-      }, speed);
+        const newDate = addMilliseconds(this.currentDate, this.speed);
+        this.$store.commit('SET_CURRENT_DATE', newDate);
+      }, this.speed);
     },
     pauseTimeline() {
       this.state = 2;
       clearInterval(this.interval);
-      this.service.pauseTimeline();
     },
     stopTimeline() {
       this.state = 0;
       clearInterval(this.interval);
-      this.service.stopTimeline();
     },
   }
 };

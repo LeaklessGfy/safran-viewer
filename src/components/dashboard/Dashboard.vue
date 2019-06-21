@@ -3,7 +3,14 @@
     <b-row>
       <b-col>
         <h1>Dashboard</h1>
+      </b-col>
+    </b-row>
 
+    <b-row>
+      <b-col class="text-center">
+        <player />
+      </b-col>
+      <b-col>
         <cleave
           v-model="currentTime"
           class="form-control mt-2"
@@ -65,6 +72,7 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
+import Player from './Player';
 import plugins, { Plugin } from '../shared/plugins';
 import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
 import { dateToTime, timeToDate } from '@/services/date';
@@ -74,6 +82,7 @@ export default {
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
+    player: Player,
     plugin: Plugin,
     ...plugins
   },
@@ -140,7 +149,9 @@ export default {
       if (realIndex > -1) {
         this.plugins[realIndex] = await updatePlugin(this.plugins[realIndex]);
       }
-      this.$refs.plugins[index].onUpdate();
+      if (this.$refs.plugins[index] && this.$refs.plugins[index].onUpdate) {
+        this.$refs.plugins[index].onUpdate();
+      }
     },
     onTimeChange(e) {
       if (e.keyCode !== undefined && e.keyCode !== 13) {

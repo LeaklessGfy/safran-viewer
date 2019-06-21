@@ -30,6 +30,7 @@ export const store = new Vuex.Store({
         ...state.experiments,
         [experiment.id]: experiment
       };
+      state.currentDate = new Date(experiment.startDate);
     },
     ADD_MEASURE(state, measure) {
       state.measures = {

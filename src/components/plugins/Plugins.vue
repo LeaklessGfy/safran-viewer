@@ -109,7 +109,7 @@ export default {
         name: null,
         experiment: null,
         measures: [],
-        component: 'highchart'
+        component: Object.keys(plugins)[0]
       }
     };
   },

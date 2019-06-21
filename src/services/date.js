@@ -65,4 +65,5 @@ export const toUTC = date => new Date(
   date.getUTCHours(),
   date.getUTCMinutes(),
   date.getUTCSeconds(),
+  date.getUTCMilliseconds()
 );

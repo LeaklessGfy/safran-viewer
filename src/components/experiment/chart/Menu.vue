@@ -26,11 +26,7 @@
     </b-col>
 
     <b-col cols="3">
-      <chart-menu-player
-        class="text-center"
-        :mod="mod"
-        :service="service"
-      />
+      <div />
     </b-col>
 
     <b-col cols="2">
@@ -64,13 +60,11 @@
 import { dateToTime, timeToTimestamp } from '@/services/date';
 import Measures from './menu/Measures';
 import Mode from './menu/Mode';
-import Player from './menu/Player';
 
 export default {
   components: {
     'chart-menu-measures': Measures,
-    'chart-menu-mode': Mode,
-    'chart-menu-player': Player
+    'chart-menu-mode': Mode
   },
   props: {
     mod: {

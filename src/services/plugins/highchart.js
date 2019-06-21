@@ -91,7 +91,7 @@ export const createChart = (ref, experiment) => {
       chart.xAxis[0].addPlotBand(addPlotBand(modification));
     },
     setTime(time) {
-      chart.series[0].points[0].update({ x: time }, true, { duration: 300 });
+      chart.series[0].points[0].update({ x: time }, true, { duration: 100 });
     },
     destroy() {
       chart.destroy();
