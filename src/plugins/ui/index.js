@@ -10,6 +10,9 @@ import 'vue-awesome/icons';
 
 import './highchart';
 
+import 'nouislider';
+import 'nouislider/distribute/nouislider.css';
+
 Vue.use(BootstrapVue);
 Vue.use(Notifications);
 Vue.use(Cleave);
