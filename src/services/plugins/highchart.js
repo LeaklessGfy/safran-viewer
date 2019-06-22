@@ -142,8 +142,8 @@ const addPlotLine = alarm => ({
 
 const addPlotBand = modification => ({
   color: COLORS[2],
-  from: modification.startDate.getTime(),
-  to: modification.endDate.getTime(),
+  from: modification.startDate,
+  to: modification.endDate,
   label: {
     text: modification.title
   }

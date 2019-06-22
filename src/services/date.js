@@ -8,7 +8,7 @@ export const dateToTimestamp = date => getTime(date);
 
 export const stringToDate = str => parse(str);
 
-export const dateToTime = date => format(toUTC(date), 'HH:mm:ss.SSS');
+export const dateToTime = date => format(toUTC(parse(date)), 'HH:mm:ss.SSS');
 
 export const timeToTimestamp = (time, date) => {
   const build = timeToDate(time, date);

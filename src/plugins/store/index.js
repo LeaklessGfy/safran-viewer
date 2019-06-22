@@ -5,6 +5,21 @@ import { fetchExperiment, fetchMeasure, fetchSamples, fetchAlarms } from '@/plug
 
 Vue.use(Vuex);
 
+const applyModification = (modification, samples) => {
+  return samples.map(sample => {
+    if (modification.operation === 'ADD') {
+      return {
+        ...sample,
+        value: (parseFloat(sample.value.replace(',', '.')) + modification.value) + '' // To fix
+      };
+    }
+    return {
+      ...sample,
+      value: modification.value + '' // To fix
+    };
+  });
+};
+
 export const store = new Vuex.Store({
   strict: true,
   state: {
@@ -13,6 +28,7 @@ export const store = new Vuex.Store({
     measures: {},
     samples: {},
     alarms: {},
+    modifications: {},
     options: {
       blocks: [2, 2, 2, 3],
       delimiters: [':', ':', '.'],
@@ -48,6 +64,17 @@ export const store = new Vuex.Store({
       state.alarms = {
         ...state.alarms,
         [id]: alarms
+      };
+    },
+    TOGGLE_MODIFICATION(state, modification) {
+      const id = modification.measure;
+      if (state.modifications[id]) {
+        delete state.modifications[id];
+      } else {
+        state.modifications[id] = modification;
+      }
+      state.samples = {
+        ...state.samples
       };
     }
   },
@@ -116,7 +143,13 @@ export const store = new Vuex.Store({
     samplesSelector: state => (ids = []) => {
       return ids
         .filter(id => state.measures[id] && state.samples[id])
-        .map(id => ({ measure: state.measures[id], samples: state.samples[id] }));
+        .map(id => ({ measure: state.measures[id], samples: state.samples[id] }))
+        .map(full => {
+          if (state.modifications[full.measure.id]) {
+            full.samples = applyModification(state.modifications[full.measure.id], full.samples);
+          }
+          return full;
+        });
     },
     alarmsSelector: state => (ids = []) => {
       return ids
@@ -127,7 +160,7 @@ export const store = new Vuex.Store({
       return state.experiments[id] ? state.experiments[id] : null;
     },
     oneAlarmsSelector: state => id => {
-      return state.alarms[id] ? state.alarms[id] : null;
+      return state.alarms[id] ? state.alarms[id] : [];
     }
   }
 });

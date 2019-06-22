@@ -36,10 +36,7 @@
         </b-form-group>
       </b-col>
 
-      <b-col
-        md="10"
-        class="h-100"
-      >
+      <b-col md="10">
         <h2>Plugins</h2>
 
         <div>
@@ -59,7 +56,6 @@
         <plugin
           :plugin="plugin"
           class="mt-4"
-          style="max-height:50%;"
         >
           <component
             :is="plugin.component"
@@ -109,7 +105,7 @@ export default {
         name: null,
         experiment: null,
         measures: [],
-        component: Object.keys(plugins)[0]
+        component: Object.keys(plugins)[1]
       }
     };
   },

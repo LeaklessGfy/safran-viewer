@@ -97,7 +97,7 @@ export const fetchExperiments = async (page = 1) => {
 
 export const fetchBenchs = async () => {
   return await execute(async db => {
-    const benchs = db.query('SELECT DISTINCT(bench) FROM experiments;');
+    const benchs = await db.query('SELECT DISTINCT(bench) FROM experiments;');
     return benchs.map(r => r.distinct);
   });
 };

@@ -69,6 +69,13 @@ export const fetchPlugins = async () => {
   }));
 };
 
+export const fetchModifications = async experimentId => {
+  return await execute(async db => {
+    const modifications = await db.query('modifications/findByExperiment', { key: experimentId, include_docs: true });
+    return modifications.rows.map(row => row.doc);
+  });
+};
+
 export const insertPlugin = async plugin => {
   const doc = {
     ...plugin,
@@ -87,6 +94,20 @@ export const insertPlugin = async plugin => {
   });
 };
 
+export const insertModification = async modification => {
+  const doc = {
+    ...modification,
+    type: 'modification'
+  };
+
+  return await execute(async db => {
+    const modification = await db.post(doc);
+    doc._id = modification.id;
+    doc._rev = modification.rev;
+    return doc;
+  });
+};
+
 export const updateConfig = async config => {
   memoizeConfig = null;
   return await execute(db => db.put(config));
@@ -98,6 +119,12 @@ export const updatePlugin = async plugin => {
     plugin._id = doc.id;
     plugin._rev = doc.rev;
     return plugin;
+  });
+};
+
+export const removeModification = async modification => {
+  return await execute(async db => {
+    return await db.remove(modification._id, modification._rev);
   });
 };
 

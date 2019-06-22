@@ -41,7 +41,7 @@ export const DESIGNS_MAPPER = {
       findByExperiment: {
         map: function(doc) {
           if (doc.type === 'modification') {
-            emit(doc.experimentId, null);
+            emit(doc.experiment, null);
           }
         }.toString()
       }
