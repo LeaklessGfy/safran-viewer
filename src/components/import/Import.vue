@@ -171,8 +171,10 @@ export default {
   name: 'Import',
   data: () => Object.assign({}, defaultState),
   async mounted() {
-    this.benchs = await fetchBenchs();
-    this.campaigns = await fetchCampaigns();
+    const benchs = await fetchBenchs();
+    const campaigns = await fetchCampaigns();
+    this.benchs = benchs ? benchs : this.benchs;
+    this.campaigns = campaigns ? campaigns : this.campaigns;
   },
   methods: {
     async onSubmit(e) {

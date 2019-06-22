@@ -115,13 +115,13 @@ export default {
   },
   computed: {
     experiment() {
-      return this.$store.getters.experimentSelector(this.plugin.experiment);
+      return this.$store.getters.oneExperimentSelector(this.plugin.experiment);
     },
     samples() {
       return this.$store.getters.samplesSelector(this.plugin.measures);
     },
     alarms() {
-      return this.$store.getters.alarmsSelector(this.plugin.experiment);
+      return this.$store.getters.oneAlarmsSelector(this.plugin.experiment);
     },
     isEdit() {
       return this.$route.params.id ? true : false;

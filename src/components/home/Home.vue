@@ -62,7 +62,8 @@ export default {
     };
   },
   async mounted() {
-    this.experiments = await fetchExperiments(this.currentPage);
+    const experiments = await fetchExperiments(this.currentPage);
+    this.experiments = experiments ? experiments : this.experiments;
   },
   methods: {
     async onPageChange(page) {

@@ -48,7 +48,8 @@ export default {
     };
   },
   async mounted() {
-    this.experiments = await fetchExperiments(this.currentPage);
+    const experiments = await fetchExperiments(this.currentPage);
+    this.experiments = experiments ? experiments : this.experiments;
     if (this.selectedExperiment) {
       this.active = this.experiments.findIndex(e => e.id === this.selectedExperiment);
     } else if (this.experiments.length > 0) {
