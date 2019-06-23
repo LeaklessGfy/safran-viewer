@@ -22,12 +22,13 @@ export const timeToDate = (time, date) => {
   if (!(date instanceof Date)) {
     date = stringToDate(date);
   }
+  const utc = toUTC(date);
 
   const timeSplit = time.split(new RegExp('[' + [':', ',', '.'].join('|') + ']', 'g'));
-  let hours = date.getHours(),
-    mins = date.getMinutes(),
-    secs = date.getSeconds(),
-    millis = date.getMilliseconds();
+  let hours = utc.getHours(),
+    mins = utc.getMinutes(),
+    secs = utc.getSeconds(),
+    millis = utc.getMilliseconds();
 
   if (timeSplit.length === 3) {
     mins = timeSplit[0];
@@ -40,13 +41,15 @@ export const timeToDate = (time, date) => {
     millis = timeSplit[3];
   }
 
-  const build = new Date(date);
-  build.setHours(parseInt(hours, 10));
-  build.setMinutes(parseInt(mins, 10));
-  build.setSeconds(parseInt(secs, 10));
-  build.setMilliseconds(parseInt(millis, 10));
-
-  return build;
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    parseInt(hours, 10),
+    parseInt(mins, 10),
+    parseInt(secs, 10),
+    parseInt(millis, 10)
+  ));
 };
 
 export const validateDate = (date, startDate, endDate) => {

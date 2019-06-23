@@ -55,12 +55,10 @@
             >
               <component
                 :is="plugin.component"
-                v-if="findExepriment(plugin.experiment)"
+                v-if="experiments[plugin.experiment]"
                 ref="plugins"
-                :key="findExepriment(plugin.experiment).id + findSamples(plugin.measures).length"
-                :experiment="findExepriment(plugin.experiment)"
-                :samples="findSamples(plugin.measures)"
-                :alarms="findAlarms(plugin.experiement)"
+                :key="plugin.experiment"
+                :plugin="plugin"
               />
             </plugin>
           </grid-item>
@@ -93,14 +91,8 @@ export default {
     };
   },
   computed: {
-    findExepriment() {
-      return id => this.$store.getters.oneExperimentSelector(id);
-    },
-    findSamples() {
-      return ids => this.$store.getters.samplesSelector(ids);
-    },
-    findAlarms() {
-      return id => this.$store.getters.oneAlarmsSelector(id);
+    experiments() {
+      return this.$store.state.experiments;
     },
     currentDate() {
       return this.$store.state.currentDate;

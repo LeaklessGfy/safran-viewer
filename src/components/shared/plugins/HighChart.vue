@@ -11,19 +11,9 @@ import { createChart } from '@/services/plugins/highchart';
 export default {
   name: 'HighChart',
   props: {
-    experiment: {
+    plugin: {
       type: Object,
       required: true
-    },
-    samples: {
-      type: Array,
-      required: false,
-      default: () => []
-    },
-    alarms: {
-      type: Array,
-      required: false,
-      default: () => []
     }
   },
   data() {
@@ -35,52 +25,80 @@ export default {
     currentDate() {
       return this.$store.state.currentDate;
     },
+    experiment() {
+      return this.$store.getters.oneExperimentSelector(this.plugin.experiment);
+    },
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.measures);
+    },
+    alarms() {
+      return this.$store.getters.oneAlarmsSelector(this.plugin.experiment);
+    },
     modifications() {
-      return this.$store.state.modifications;
+      return this.$store.getters.modificationsSelector(this.plugin.measures);
     }
   },
   watch: {
     currentDate(currentDate) {
-      if (this.service) {
-        this.service.setTime(currentDate);
+      if (!this.service) {
+        return;
       }
+      this.service.setTime(currentDate, this.$store.state.speed);
     },
     samples() {
-      if (this.service) {
-        this.init();
-      }
+      this.updateSamples();
+    },
+    alarms() {
+      this.updateAlarms();
+    },
+    modifications(newModifications) {
+      this.updateModifications(newModifications);
     }
   },
   mounted() {
-    this.init();
+    this.service = createChart(this.$refs.chart, this.experiment);
+    this.service.addOnClickObserver(date => {
+      this.$store.commit('SET_CURRENT_DATE', date);
+      this.$store.commit('SET_SPEED', 300);
+    });
+    this.updateSamples();
+    this.updateAlarms();
+    this.updateModifications(this.modifications);
     this.$nextTick(() => this.onUpdate());
   },
   destroyed() {
-    if (this.service) {
-      this.service.destroy();
-    }
+    this.service && this.service.destroy();
   },
   methods: {
-    init() {
-      if (this.service) {
-        this.service.destroy();
+    updateSamples() {
+      if (!this.service) {
+        return;
       }
-      this.service = createChart(this.$refs.chart, this.experiment);
-      this.service.addOnClickObserver(date => this.$store.commit('SET_CURRENT_DATE', date));
+      this.service.cleanMeasures();
       for (const { measure, samples } of this.samples) {
         this.service.addMeasure(measure, samples);
       }
+    },
+    updateAlarms() {
+      if (!this.service) {
+        return;
+      }
+      this.service.cleanAlarms();
       for (const alarm of this.alarms) {
         this.service.addAlarm(alarm);
       }
-      for (const modification of Object.values(this.modifications)) {
+    },
+    updateModifications(modifications) {
+      if (!this.service) {
+        return;
+      }
+      this.service.cleanModifications();
+      for (const modification of modifications) {
         this.service.addModification(modification);
       }
     },
     onUpdate() {
-      if (this.service) {
-        this.service.scale();
-      }
+      this.service && this.service.scale();
     }
   }
 };

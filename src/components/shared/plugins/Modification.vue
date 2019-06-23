@@ -50,9 +50,9 @@
         slot-scope="scope"
       >
         <b-button
-          v-if="!scope.item.isApply"
+          v-if="!selectedModifications.find(m => m._id === scope.item._id)"
           size="sm"
-          variant="primary"
+          variant="success"
           @click="() => toggleModification(scope.item)"
         >
           Appliquer
@@ -63,7 +63,7 @@
           variant="warning"
           @click="() => toggleModification(scope.item)"
         >
-          Enlever
+          Enlever ({{ selectedModifications.findIndex(m => m._id === scope.item._id) + 1 }})
         </b-button>
         <b-button
           size="sm"
@@ -71,7 +71,7 @@
           class="ml-2"
           @click="() => removeModification(scope.item)"
         >
-          Supprimer
+          <v-icon name="trash" />
         </b-button>
       </template>
     </b-table>
@@ -86,14 +86,9 @@ import { dateToTime, timeToDate } from '@/services/date';
 export default {
   name: 'Modification',
   props: {
-    experiment: {
+    plugin: {
       type: Object,
       required: true
-    },
-    samples: {
-      type: Array,
-      required: false,
-      default: () => []
     }
   },
   data() {
@@ -118,7 +113,23 @@ export default {
       ]
     };
   },
+  computed: {
+    experiment() {
+      return this.$store.getters.oneExperimentSelector(this.plugin.experiment);
+    },
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.measures);
+    },
+    selectedModifications() {
+      return this.$store.getters.modificationsSelector(this.plugin.measures);
+    }
+  },
   watch: {
+    samples(samples) {
+      if (samples.length > 0) {
+        this.modification.measure = samples[0].measure.id;        
+      }
+    },
     'modification.measure': function (newId) {
       const full = this.samples.find(s => s.measure.id === newId);
       const s = full.samples;
@@ -138,7 +149,7 @@ export default {
     this.modification.experiment = this.experiment.id;
 
     if (this.samples.length > 0) {
-      this.modification.measure = this.samples[0].measure.id;
+      this.modification.measure = this.samples[0].measure.id;        
     }
 
     noUiSlider.create(this.$refs.slider, {
@@ -148,7 +159,7 @@ export default {
       connect: true,
       tooltips: true,
       format: {
-        to: timestamp => dateToTime(new Date(timestamp)),
+        to: timestamp => dateToTime(timestamp),
         from: value => value
       },
       range: {
@@ -159,7 +170,7 @@ export default {
         mode: 'steps',
         density: 3,
         format: {
-          to: timestamp => dateToTime(new Date(timestamp)),
+          to: timestamp => dateToTime(timestamp),
           from: value => value
         }
       }

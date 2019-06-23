@@ -53,19 +53,19 @@
           </b-button>
         </div>
 
-        <plugin
-          :plugin="plugin"
-          class="mt-4"
-        >
-          <component
-            :is="plugin.component"
-            v-if="experiment"
-            :key="experiment.id + samples.length"
-            :experiment="experiment"
-            :samples="samples"
-            :alarms="alarms"
-          />
-        </plugin>
+        <div style="height: 50%">
+          <plugin
+            :plugin="plugin"
+            class="mt-4"
+          >
+            <component
+              :is="plugin.component"
+              v-if="experiment"
+              :key="experiment.id"
+              :plugin="plugin"
+            />
+          </plugin>
+        </div>
 
         <div>
           <b-button

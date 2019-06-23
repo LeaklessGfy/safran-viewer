@@ -8,7 +8,7 @@
       <v-icon name="pause" />
     </b-button>
     <b-button
-      variant="primary"
+      variant="success"
       :disabled="state === 1"
       @click="startTimeline"
     >
@@ -52,6 +52,7 @@ export default {
       this.interval = setInterval(() => {
         const newDate = addMilliseconds(this.currentDate, this.speed);
         this.$store.commit('SET_CURRENT_DATE', newDate);
+        this.$store.commit('SET_SPEED', this.speed);
       }, this.speed);
     },
     pauseTimeline() {

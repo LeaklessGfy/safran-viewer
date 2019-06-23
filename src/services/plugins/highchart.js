@@ -31,7 +31,6 @@ export const createChart = (ref, experiment) => {
         click: function (e) {
           const x = e.xAxis[0].value;
           const date = new Date(x);
-          chart.series[0].points[0].update({ x }, true, { duration: 300 });
           observers.onClick.forEach(o => o(date));
         }
       }
@@ -88,10 +87,37 @@ export const createChart = (ref, experiment) => {
       chart.xAxis[0].addPlotLine(addPlotLine(alarm));
     },
     addModification(modification) {
-      chart.xAxis[0].addPlotBand(addPlotBand(modification));
+      const index = chart.xAxis[0].plotLinesAndBands.length;
+      chart.xAxis[0].addPlotBand(addPlotBand(index, modification));
     },
-    setTime(time) {
-      chart.series[0].points[0].update({ x: time }, true, { duration: 100 });
+    setTime(time, duration = 100) {
+      chart.series[0].points[0].update({ x: time }, true, { duration });
+    },
+    cleanMeasures() {
+      for (let i = 1; i < chart.yAxis.length; i++) {
+        chart.yAxis[i].remove();
+      }
+      chart.redraw();
+    },
+    cleanAlarms() {
+      const toRemove = [];
+      for (const plotLine of chart.xAxis[0].plotLinesAndBands) {
+        toRemove.push(plotLine.id);
+      }
+      for (const id of toRemove) {
+        chart.xAxis[0].removePlotLine(id);
+      }
+      chart.redraw();
+    },
+    cleanModifications() {
+      const toRemove = [];
+      for (const plotBand of chart.xAxis[0].plotLinesAndBands) {
+        toRemove.push(plotBand.id);
+      }
+      for (const id of toRemove) {
+        chart.xAxis[0].removePlotBand(id);
+      }
+      chart.redraw();
     },
     destroy() {
       chart.destroy();
@@ -129,6 +155,7 @@ const addSeries = (index, measure, samples) => ({
 });
 
 const addPlotLine = alarm => ({
+  id: alarm.id,
   color: 'red', // get color from alarm level
   dashStyle: 'ShortDash',
   width: 2,
@@ -140,11 +167,14 @@ const addPlotLine = alarm => ({
   }
 });
 
-const addPlotBand = modification => ({
-  color: COLORS[2],
+const addPlotBand = (index, modification) => ({
+  id: modification._id,
+  borderColor: COLORS[index + 1],
+  borderWidth: 2,
+  zIndex: index,
   from: modification.startDate,
   to: modification.endDate,
   label: {
-    text: modification.title
+    text: modification.operation + ' : ' + modification.value
   }
 });

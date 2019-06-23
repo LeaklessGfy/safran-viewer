@@ -7,15 +7,18 @@ Vue.use(Vuex);
 
 const applyModification = (modification, samples) => {
   return samples.map(sample => {
-    if (modification.operation === 'ADD') {
-      return {
-        ...sample,
-        value: (parseFloat(sample.value.replace(',', '.')) + modification.value) + '' // To fix
-      };
+    if (sample.time < modification.startDate || sample.time > modification.endDate) {
+      return sample;
     }
+
+    const result = modification.operation === 'ADD' ?
+      parseFloat(sample.value.replace(',', '.')) + parseInt(modification.value, 10)
+      :
+      modification.value;
+
     return {
       ...sample,
-      value: modification.value + '' // To fix
+      value: result + ''
     };
   });
 };
@@ -24,11 +27,12 @@ export const store = new Vuex.Store({
   strict: true,
   state: {
     currentDate: new Date(),
+    speed: 300,
     experiments: {},
     measures: {},
     samples: {},
     alarms: {},
-    modifications: {},
+    modifications: [],
     options: {
       blocks: [2, 2, 2, 3],
       delimiters: [':', ':', '.'],
@@ -40,6 +44,9 @@ export const store = new Vuex.Store({
   mutations: {
     SET_CURRENT_DATE(state, currentDate) {
       state.currentDate = currentDate;
+    },
+    SET_SPEED(state, speed) {
+      state.speed = speed;
     },
     ADD_EXPERIMENT(state, experiment) {
       state.experiments = {
@@ -67,15 +74,11 @@ export const store = new Vuex.Store({
       };
     },
     TOGGLE_MODIFICATION(state, modification) {
-      const id = modification.measure;
-      if (state.modifications[id]) {
-        delete state.modifications[id];
+      if (state.modifications.find(m => m._id === modification._id)) {
+        state.modifications = state.modifications.filter(m => m._id !== modification._id);
       } else {
-        state.modifications[id] = modification;
+        state.modifications = state.modifications.concat(modification);
       }
-      state.samples = {
-        ...state.samples
-      };
     }
   },
   actions: {
@@ -145,8 +148,10 @@ export const store = new Vuex.Store({
         .filter(id => state.measures[id] && state.samples[id])
         .map(id => ({ measure: state.measures[id], samples: state.samples[id] }))
         .map(full => {
-          if (state.modifications[full.measure.id]) {
-            full.samples = applyModification(state.modifications[full.measure.id], full.samples);
+          for (const modification of state.modifications) {
+            if (modification.measure === full.measure.id) {
+              full.samples = applyModification(modification, full.samples);
+            }
           }
           return full;
         });
@@ -155,6 +160,11 @@ export const store = new Vuex.Store({
       return ids
         .filter(id => state.alarms[id])
         .map(id => state.alarms[id]);
+    },
+    modificationsSelector: state => (ids = []) => {
+      return ids
+        .filter(id => state.modifications.find(m => m.measure === id) !== null)
+        .flatMap(id => state.modifications.filter(m => m.measure === id));
     },
     oneExperimentSelector: state => id=> {
       return state.experiments[id] ? state.experiments[id] : null;

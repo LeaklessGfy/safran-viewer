@@ -13,8 +13,8 @@ import updateTimeline from '@/services/plugins/timeline';
 
 export default {
   props: {
-    samples: {
-      type: Array,
+    plugin: {
+      type: Object,
       required: true
     }
   },
@@ -24,16 +24,22 @@ export default {
     };
   },
   computed: {
+    samples() {
+      return this.$store.getters.samplesSelector(this.plugin.measures);
+    },
     currentDate() {
       return this.$store.state.currentDate;
     }
   },
   watch: {
-    currentDate(newDate) {
-      this.timeline = updateTimeline(this.samples, newDate);
+    samples() {
+      this.timeline = updateTimeline(this.samples, this.currentDate);
+    },
+    currentDate() {
+      this.timeline = updateTimeline(this.samples, this.currentDate);
     }
   },
-  mounted(){
+  mounted() {
     this.timeline = updateTimeline(this.samples, this.currentDate);
   }
 };
