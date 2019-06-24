@@ -1,6 +1,6 @@
 import PouchDB from 'pouchdb';
-import { DESIGNS, DESIGNS_MAPPER } from './couchdb/schema';
-import { loading$, error$ } from './dbsubject';
+import { DESIGNS, DESIGNS_MAPPER } from './schema';
+import { loading$, error$ } from '../subjects';
 
 const DATABASE_NAME = 'safran_db';
 

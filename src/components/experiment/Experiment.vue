@@ -24,23 +24,13 @@
         />
       </b-card-body>
     </b-collapse>
-
-    <chart
-      v-if="experiment"
-      :mod="mod"
-      class="mt-2"
-    />
   </b-container>
 </template>
 
 <script>
-import Chart from './Chart';
-import { dateToString } from '@/services/date';
+import { epochToString } from '@/services/date';
 
 export default {
-  components: {
-    chart: Chart
-  },
   data() {
     return {
       mod: 'default',
@@ -50,8 +40,8 @@ export default {
         'reference',
         'bench',
         'campaign',
-        { key: 'startDate', formatter: dateToString },
-        { key: 'endDate', formatter: dateToString }
+        { key: 'startDate', formatter: epochToString },
+        { key: 'endDate', formatter: epochToString }
       ]
     };
   },
@@ -67,7 +57,7 @@ export default {
     this.$store.commit(`${this.mod}/RESET`);
   },
   methods: {
-    dateToString
+    epochToString
   }
 };
 </script>

@@ -1,5 +1,5 @@
 import { differenceInMilliseconds } from 'date-fns';
-import { dateToTime } from '../date';
+import { epochToTime } from '../date';
 
 export default (samples, date) => {
   const timeline = [];
@@ -10,7 +10,7 @@ export default (samples, date) => {
       measure: measure.name,
       type: measure.type,
       unit: measure.unit,
-      time: dateToTime(date),
+      time: epochToTime(date),
       value: data ? data : '-'
     });
   }

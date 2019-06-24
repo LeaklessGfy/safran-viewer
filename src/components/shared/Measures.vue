@@ -8,7 +8,7 @@
       >
         {{ measure.name + (measure.unit ? ' - ' + measure.unit : '') }}
         <b-button
-          v-if="!tmpMeasures.some(id => id === measure.id)"
+          v-if="!selectedMeasures.some(id => id === measure.id)"
           variant="outline-success"
           @click="() => addMeasure(measure)"
         >
@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import { fetchMeasures } from '@/plugins/db/dbremote';
+import { fetchMeasures } from '@/services/db/remote';
 
 export default {
   props: {
@@ -64,7 +64,6 @@ export default {
   data() {
     return {
       measures: [],
-      tmpMeasures: [],
       currentPage: 1
     };
   },
@@ -72,16 +71,13 @@ export default {
     if (!this.experiment) {
       return;
     }
-    this.tmpMeasures = this.selectedMeasures.slice();
     this.measures = await fetchMeasures(this.experiment, this.currentPage);
   },
   methods: {
     addMeasure(measure) {
-      this.tmpMeasures.push(measure.id);
       this.onAddMeasure(measure.id);
     },
     removeMeasure(measure) {
-      this.tmpMeasures = this.tmpMeasures.filter(id => id !== measure.id);
       this.onRemoveMeasure(measure.id);
     },
     async onPageChange(page) {

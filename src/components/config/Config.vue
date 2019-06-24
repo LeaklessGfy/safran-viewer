@@ -83,8 +83,8 @@
 </template>
 
 <script>
-import { fetchConfig, updateConfig, installDB as localInstall, dropDB as localDrop } from '@/plugins/db/dblocal';
-import { installDB as remoteInstall, dropDB as remoteDrop } from '@/plugins/db/dbremote';
+import { fetchConfig, updateConfig, installDB as localInstall, dropDB as localDrop } from '@/services/db/local';
+import { installDB as remoteInstall, dropDB as remoteDrop } from '@/services/db/remote';
 
 export default {
   data() {

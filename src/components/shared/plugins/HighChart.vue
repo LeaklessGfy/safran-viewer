@@ -56,7 +56,7 @@ export default {
     }
   },
   mounted() {
-    this.service = createChart(this.$refs.chart, this.experiment);
+    this.service = createChart(this.$refs.chart, this.experiment, this.currentDate);
     this.service.addOnClickObserver(date => {
       this.$store.commit('SET_CURRENT_DATE', date);
       this.$store.commit('SET_SPEED', 300);

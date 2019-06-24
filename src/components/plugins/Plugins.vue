@@ -86,26 +86,25 @@
 <script>
 import Experiments from '../shared/Experiments';
 import Measures from '../shared/Measures';
-import plugins, { Plugin } from '../shared/plugins';
+import plugins from '../shared/plugins';
 
-import { fetchPlugin, insertPlugin, updatePlugin } from '@/plugins/db/dblocal';
+import { fetchPlugin, insertPlugin, updatePlugin } from '@/services/db/local';
 
 export default {
   name: 'Plugins',
   components: {
     experiments: Experiments,
     measures: Measures,
-    plugin: Plugin,
     ...plugins
   },
   data() {
     return {
-      plugins: Object.keys(plugins),
+      plugins: Object.keys(plugins).filter(p => p !== 'plugin'),
       plugin: {
         name: null,
         experiment: null,
         measures: [],
-        component: Object.keys(plugins)[1]
+        component: Object.keys(plugins)[0]
       }
     };
   },

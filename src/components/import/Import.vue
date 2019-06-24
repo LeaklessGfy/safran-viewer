@@ -148,8 +148,8 @@
 </template>
 
 <script>
-import { fetchBenchs, fetchCampaigns } from '@/plugins/db/dbremote';
 import importExperiment from '@/services/import';
+import { fetchBenchs, fetchCampaigns } from '@/services/db/remote';
 
 const defaultState = {
   reference: 'test',

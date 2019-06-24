@@ -50,8 +50,11 @@
           >
             <plugin
               :plugin="plugin"
-              :toggle-plugin="togglePlugin"
-              :remove-plugin="removePlugin"
+              :copy="copy"
+              :copy-plugin="copyPlugin"
+              :edit-plugin="editPlugin"
+              :lock-plugin="lockPlugin"
+              :hide-plugin="hidePlugin"
             >
               <component
                 :is="plugin.component"
@@ -65,15 +68,21 @@
         </grid-layout>
       </b-col>
     </b-row>
+
+    <config
+      :plugin="selectedPlugin"
+      :on-edit="onEdit"
+    />
   </b-container>
 </template>
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
 import Player from './Player';
-import plugins, { Plugin } from '../shared/plugins';
-import { fetchPlugins, updatePlugin } from '@/plugins/db/dblocal';
-import { dateToTime, timeToDate } from '@/services/date';
+import plugins from '../shared/plugins';
+import Config from '../shared/plugins/Config';
+import { fetchPlugins, updatePlugin } from '@/services/db/local';
+import { epochToTime, timeToEpoch } from '@/services/date';
 
 export default {
   name: 'Dashboard',
@@ -81,13 +90,15 @@ export default {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
     player: Player,
-    plugin: Plugin,
+    config: Config,
     ...plugins
   },
   data() {
     return {
       plugins: [],
-      currentTime: null
+      currentTime: null,
+      selectedPlugin: {},
+      copy: null
     };
   },
   computed: {
@@ -103,7 +114,7 @@ export default {
   },
   watch: {
     currentDate(currentDate) {
-      this.currentTime = dateToTime(currentDate);
+      this.currentTime = epochToTime(currentDate);
     }
   },
   async mounted() {
@@ -118,19 +129,39 @@ export default {
       }
     }
 
-    this.currentTime = dateToTime(this.currentDate);
+    this.currentTime = epochToTime(this.currentDate);
     this.$store.dispatch('fetchExperiments', [...experiments]);
     this.$store.dispatch('fetchSamples', [...measures]);
     this.$store.dispatch('fetchAlarms', [...experiments]);
   },
   methods: {
-    togglePlugin(index) {
+    copyPlugin(index) {
+      const plugin = this.plugins.find(plugin => plugin.i === index);
+      if (!plugin) {
+        return;
+      }
+      if (this.copy === null) {
+        this.copy = plugin;
+      } else {
+        plugin.experiment = this.copy.experiment;
+        plugin.measures = this.copy.measures.slice();
+        this.copy = null;
+      }
+    },
+    editPlugin(index) {
+      const plugin = this.plugins.find(plugin => plugin.i === index);
+      if (plugin) {
+        this.selectedPlugin = plugin;
+        this.$bvModal.show('plugin-config');
+      }
+    },
+    lockPlugin(index) {
       const plugin = this.plugins.find(plugin => plugin.i === index);
       if (plugin) {
         plugin.static = !plugin.static;
       }
     },
-    removePlugin(index) {
+    hidePlugin(index) {
       this.plugins = this.plugins.filter(plugin => plugin.i !== index);
     },
     async updatePlugin(index) {
@@ -146,8 +177,21 @@ export default {
       if (e.keyCode !== undefined && e.keyCode !== 13) {
         return;
       }
-      const date = timeToDate(this.currentTime, this.currentDate);
+      const date = timeToEpoch(this.currentTime, this.currentDate);
       this.$store.commit('SET_CURRENT_DATE', date);
+    },
+    async onEdit(plugin) {
+      const realIndex = this.plugins.findIndex(p => p.i === plugin.i);
+      const saved = await updatePlugin(plugin);
+      this.selectedPlugin = saved;
+      this.plugins[realIndex] = saved;
+      this.$notify({
+        type: 'success',
+        text: 'Le plugin a été correctement mis à jour'
+      });
+      this.$store.dispatch('fetchExperiments', [saved.experiment]);
+      this.$store.dispatch('fetchSamples', saved.measures);
+      this.$store.dispatch('fetchAlarms', [saved.experiment]);
     }
   }
 };

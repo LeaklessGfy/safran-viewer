@@ -1,7 +1,7 @@
 import * as Influx from 'influx';
-import Schema from './influxdb/schema';
-import { fetchConfig } from './dblocal';
-import { loading$, error$ } from './dbsubject';
+import Schema from './schema';
+import { fetchConfig } from '../local';
+import { loading$, error$ } from '../subjects';
 
 const DATABASE_NAME = 'safran_db';
 

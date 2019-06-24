@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { fetchExperiments, removeExperiment } from '@/plugins/db/dbremote';
+import { fetchExperiments, removeExperiment } from '@/services/db/remote';
 
 export default {
   name: 'Home',

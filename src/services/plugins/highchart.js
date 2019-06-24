@@ -1,10 +1,10 @@
 import * as Highcharts from 'highcharts';
-import { dateToString } from '../date';
+import { epochToString } from '../date';
 import { COLORS, GREEN } from '@/plugins/ui/highchart';
 
-export const createChart = (ref, experiment) => {
-  const min = new Date(experiment.startDate).getTime();
-  const max = new Date(experiment.endDate).getTime();
+export const createChart = (ref, experiment, currentDate) => {
+  const min = experiment.startDate;
+  const max = experiment.endDate;
   const observers = {
     onClick: []
   };
@@ -21,7 +21,7 @@ export const createChart = (ref, experiment) => {
     name: 'Time',
     yAxis: 0,
     color: GREEN,
-    data: [[min, 1]]
+    data: [[currentDate, 1]]
   };
 
   const chart = Highcharts.chart(ref, {
@@ -30,8 +30,7 @@ export const createChart = (ref, experiment) => {
       events: {
         click: function (e) {
           const x = e.xAxis[0].value;
-          const date = new Date(x);
-          observers.onClick.forEach(o => o(date));
+          observers.onClick.forEach(o => o(x));
         }
       }
     },
@@ -39,7 +38,7 @@ export const createChart = (ref, experiment) => {
       text: experiment.name
     },
     subtitle: {
-      text: dateToString(experiment.startDate) + ' - ' + dateToString(experiment.endDate)
+      text: epochToString(experiment.startDate) + ' - ' + epochToString(experiment.endDate)
     },
     credits: {
       enabled: false
@@ -94,8 +93,12 @@ export const createChart = (ref, experiment) => {
       chart.series[0].points[0].update({ x: time }, true, { duration });
     },
     cleanMeasures() {
+      const toRemove = [];
       for (let i = 1; i < chart.yAxis.length; i++) {
-        chart.yAxis[i].remove();
+        toRemove.push(chart.yAxis[i]);
+      }
+      for (const axes of toRemove) {
+        axes.remove();
       }
       chart.redraw();
     },

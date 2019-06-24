@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
-import { fetchExperiment, fetchMeasure, fetchSamples, fetchAlarms } from '@/plugins/db/dbremote';
+import { fetchExperiment, fetchMeasure, fetchSamples, fetchAlarms } from '@/services/db/remote';
 
 Vue.use(Vuex);
 
@@ -26,7 +26,7 @@ const applyModification = (modification, samples) => {
 export const store = new Vuex.Store({
   strict: true,
   state: {
-    currentDate: new Date(),
+    currentDate: Date.now(),
     speed: 300,
     experiments: {},
     measures: {},
@@ -53,7 +53,7 @@ export const store = new Vuex.Store({
         ...state.experiments,
         [experiment.id]: experiment
       };
-      state.currentDate = new Date(experiment.startDate);
+      state.currentDate = experiment.startDate;
     },
     ADD_MEASURE(state, measure) {
       state.measures = {

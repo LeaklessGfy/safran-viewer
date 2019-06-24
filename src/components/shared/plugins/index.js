@@ -1,11 +1,11 @@
 import chart from './HighChart';
 import modification from './Modification';
 import timeline from './Timeline';
-
-export { default as Plugin } from './Plugin';
+import plugin from './Plugin';
 
 export default {
   chart,
   modification,
-  timeline
+  timeline,
+  plugin
 };

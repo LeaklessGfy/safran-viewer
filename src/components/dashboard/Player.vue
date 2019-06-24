@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import { addMilliseconds } from 'date-fns';
+import { addMilliseconds } from '@/services/date';
 
 export default {
   props: {

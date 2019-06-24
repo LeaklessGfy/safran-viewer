@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import { loading$, error$ } from '@/plugins/db/dbsubject';
+import { loading$, error$ } from '@/services/db/subjects';
 
 export default {
   name: 'Navbar',

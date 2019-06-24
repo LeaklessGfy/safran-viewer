@@ -2,12 +2,12 @@
   <div>
     <b-list-group>
       <b-list-group-item
-        v-for="(experiment, index) in experiments"
+        v-for="experiment in experiments"
         :key="experiment.id"
         class="d-flex justify-content-between align-items-center"
         button
-        :active="index === active"
-        @click="() => onClickExperiment(index)"
+        :active="selectedExperiment === experiment.id"
+        @click="() => onClickExperiment(experiment.id)"
       >
         {{ experiment.name }}
       </b-list-group-item>
@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { fetchExperiments } from '@/plugins/db/dbremote';
+import { fetchExperiments } from '@/services/db/remote';
 
 export default {
   props: {
@@ -43,28 +43,19 @@ export default {
   data() {
     return {
       experiments: [],
-      currentPage: 1,
-      active: -1
+      currentPage: 1
     };
   },
   async mounted() {
     const experiments = await fetchExperiments(this.currentPage);
     this.experiments = experiments ? experiments : this.experiments;
-    if (this.selectedExperiment) {
-      this.active = this.experiments.findIndex(e => e.id === this.selectedExperiment);
-    } else if (this.experiments.length > 0) {
-      this.onClickExperiment(0);
+    if (!this.selectedExperiment && this.experiments.length > 0) {
+      this.onClickExperiment(this.experiments[0].id);
     }
   },
   methods: {
-    onClickExperiment(index) {
-      if (this.active === index) {
-        this.active = -1;
-        this.onExperiment(null);
-      } else {
-        this.active = index;
-        this.onExperiment(this.experiments[index].id);
-      }
+    onClickExperiment(id) {
+      this.onExperiment(this.selectedExperiment === id ? null : id);
     },
     async onPageChange(page) {
       this.currentPage = page;

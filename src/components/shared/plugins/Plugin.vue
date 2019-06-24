@@ -13,16 +13,27 @@
         <b-button
           size="sm"
           squared
+          title="Copier"
+          :variant="copy === plugin ? 'warning' : 'outline-dark'"
+          @click="() => copyPlugin(plugin.i)"
+        >
+          <v-icon name="copy" />
+        </b-button>
+        <b-button
+          size="sm"
+          squared
+          title="Editer"
           variant="outline-dark"
-          :href="'/#/plugins/' + plugin._id"
+          @click="() => editPlugin(plugin.i)"
         >
           <v-icon name="cog" />
         </b-button>
         <b-button
           size="sm"
           squared
+          :title="plugin.static ? 'Dévérouiller' : 'Vérouiller'"
           variant="outline-dark"
-          @click="() => togglePlugin(plugin.i)"
+          @click="() => lockPlugin(plugin.i)"
         >
           <v-icon :name="plugin.static ? 'lock' : 'unlock'" />
         </b-button>
@@ -30,8 +41,9 @@
         <b-button
           size="sm"
           squared
+          title="Cacher"
           variant="outline-dark"
-          @click="() => removePlugin(plugin.i)"
+          @click="() => hidePlugin(plugin.i)"
         >
           <v-icon name="minus" />
         </b-button>
@@ -54,12 +66,27 @@ export default {
       type: Object,
       required: true
     },
-    togglePlugin: {
+    copy: {
+      type: Object,
+      required: false,
+      default: () => ({})
+    },
+    copyPlugin: {
       type: Function,
       required: false,
       default: () => {}
     },
-    removePlugin: {
+    editPlugin: {
+      type: Function,
+      required: false,
+      default: () => {}
+    },
+    lockPlugin: {
+      type: Function,
+      required: false,
+      default: () => {}
+    },
+    hidePlugin: {
       type: Function,
       required: false,
       default: () => {}

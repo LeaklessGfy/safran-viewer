@@ -80,8 +80,8 @@
 
 <script>
 import * as noUiSlider from 'nouislider';
-import { fetchModifications, insertModification, removeModification } from '@/plugins/db/dblocal';
-import { dateToTime, timeToDate } from '@/services/date';
+import { fetchModifications, insertModification, removeModification } from '@/services/db/local';
+import { epochToTime, timeToEpoch } from '@/services/date';
 
 export default {
   name: 'Modification',
@@ -105,8 +105,8 @@ export default {
       modifications: [],
       fields: [
         'measure',
-        { key: 'startDate', formatter: dateToTime },
-        { key: 'endDate', formatter: dateToTime },
+        { key: 'startDate', formatter: epochToTime },
+        { key: 'endDate', formatter: epochToTime },
         'operation',
         'value',
         'actions'
@@ -143,9 +143,8 @@ export default {
     }
   },
   async mounted() {
-    const date = new Date(this.experiment.startDate);
-    this.start = date.getTime();
-    this.end = new Date(this.experiment.endDate).getTime();
+    this.start = this.experiment.startDate;
+    this.end = this.experiment.endDate;
     this.modification.experiment = this.experiment.id;
 
     if (this.samples.length > 0) {
@@ -159,7 +158,7 @@ export default {
       connect: true,
       tooltips: true,
       format: {
-        to: timestamp => dateToTime(timestamp),
+        to: timestamp => epochToTime(timestamp),
         from: value => value
       },
       range: {
@@ -170,15 +169,15 @@ export default {
         mode: 'steps',
         density: 3,
         format: {
-          to: timestamp => dateToTime(timestamp),
+          to: timestamp => epochToTime(timestamp),
           from: value => value
         }
       }
     });
 
     this.$refs.slider.noUiSlider.on('change', values => {
-      this.start = timeToDate(values[0], date).getTime();
-      this.end = timeToDate(values[1], date).getTime();
+      this.start = timeToEpoch(values[0], this.experiment.startDate);
+      this.end = timeToEpoch(values[1], this.experiment.startDate);
     });
 
     const modifications = await fetchModifications(this.experiment.id);
